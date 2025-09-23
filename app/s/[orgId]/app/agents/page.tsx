@@ -9,6 +9,7 @@ export default async function AgentsPage({
     params: Promise<{ orgId: string }>;
 }) {
     const { client_id } = await searchParams
+    
     const { orgId } = await params
 
     return (

@@ -81,7 +81,7 @@ export async function unassignVapiAgentFromClient(agentId: string) {
             throw new Error('Failed to unassign phone numbers from agent')
         }
         
-        console.log(`Successfully unassigned ${phoneNumbers.length} phone numbers`)
+        // console.log(`Successfully unassigned ${phoneNumbers.length} phone numbers`)
     }
 
     // Remove webhook URL from Vapi agent if it's a Vapi agent
