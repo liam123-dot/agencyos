@@ -254,6 +254,26 @@ export function CallDetailsDialog({ call, open, onOpenChange }: CallDetailsDialo
                         </>
                     )}
 
+                    {/* Call Summary */}
+                    {call.data.analysis?.summary && (
+                        <>
+                            <Separator />
+                            
+                            <div className="space-y-4">
+                                <h3 className="font-medium flex items-center gap-2">
+                                    <MessageSquare className="h-4 w-4" />
+                                    Call Summary
+                                </h3>
+                                
+                                <div className="bg-muted/50 rounded-lg p-4">
+                                    <p className="text-sm text-muted-foreground">
+                                        {call.data.analysis.summary}
+                                    </p>
+                                </div>
+                            </div>
+                        </>
+                    )}
+
                     {/* Transcript */}
                     {getTranscript(call.data) && (
                         <>
