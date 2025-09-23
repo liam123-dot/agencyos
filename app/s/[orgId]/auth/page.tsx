@@ -2,13 +2,14 @@
 import { getPublicOrg } from "@/app/api/user/selected-organization/getOrg";
 import { ClientSignInForm } from "@/components/clients/ClientAuth/ClientSignInForm";
 import { notFound, redirect } from "next/navigation";
-import { getUser } from "@/app/api/user/getUser";
+import { createServerClient } from "@/lib/supabase/server";
 
 export default async function SubdomainAuthPage({ params }: { params: Promise<{ orgId: string }> }) {
     const { orgId } = await params;
 
-    const user = await getUser()
-
+    const supabase = await createServerClient()
+    const { data: { user }, error } = await supabase.auth.getUser()
+    
     console.log('user', user);
 
     if (user) {

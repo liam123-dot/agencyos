@@ -24,13 +24,6 @@ export default async function CallsPage({ searchParams, params }: CallsPageProps
 
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight">Calls</h1>
-                <p className="text-muted-foreground">
-                    View and manage all calls made through your agents
-                </p>
-            </div>
-            
             <CallsComponent 
                 initialPage={currentPage}
                 initialLimit={currentLimit}

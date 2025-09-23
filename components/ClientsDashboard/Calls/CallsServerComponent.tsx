@@ -6,9 +6,12 @@ interface GetCallsParams {
     page?: number;
     limit?: number;
     clientId?: string;
+    search?: string;
+    status?: string;
+    agent?: string;
 }
 
-export async function getCalls({ page = 1, limit = 10, clientId }: GetCallsParams) {
+export async function getCalls({ page = 1, limit = 10, clientId, search, status, agent }: GetCallsParams) {
     // Validate and clamp limit to allowed values
     const allowedLimits = [10, 25, 50];
     const validatedLimit = allowedLimits.includes(limit) ? limit : 10;
@@ -25,8 +28,8 @@ export async function getCalls({ page = 1, limit = 10, clientId }: GetCallsParam
 
     const offset = (page - 1) * validatedLimit;
 
-    // Fetch calls with agent information using left join to include calls without agents
-    const { data: callsData, error } = await supabaseServerClient
+    // Build the query with filters
+    let query = supabaseServerClient
         .from('calls')
         .select(`
             *,
@@ -37,7 +40,26 @@ export async function getCalls({ page = 1, limit = 10, clientId }: GetCallsParam
                 data
             )
         `)
-        .eq('client_id', client_id)
+        .eq('client_id', client_id);
+
+    // Apply search filter
+    if (search && search.trim()) {
+        // Search in call data (JSON field) for phone numbers or transcripts
+        query = query.or(`data->>customer->number.ilike.%${search}%,data->>transcript.ilike.%${search}%`);
+    }
+
+    // Apply status filter
+    if (status) {
+        query = query.eq('data->>status', status);
+    }
+
+    // Apply agent filter
+    if (agent) {
+        query = query.eq('agent_id', agent);
+    }
+
+    // Apply ordering and pagination
+    const { data: callsData, error } = await query
         .order('created_at', { ascending: false })
         .range(offset, offset + validatedLimit - 1);
 
@@ -46,16 +68,33 @@ export async function getCalls({ page = 1, limit = 10, clientId }: GetCallsParam
         throw new Error('Failed to fetch calls');
     }
 
-    // Get total count for pagination
-    const { count, error: countError } = await supabaseServerClient
+    // Get total count for pagination with same filters
+    let countQuery = supabaseServerClient
         .from('calls')
         .select('*', { count: 'exact', head: true })
         .eq('client_id', client_id);
+
+    // Apply same filters for count
+    if (search && search.trim()) {
+        countQuery = countQuery.or(`data->>customer->number.ilike.%${search}%,data->>transcript.ilike.%${search}%`);
+    }
+
+    if (status) {
+        countQuery = countQuery.eq('data->>status', status);
+    }
+
+    if (agent) {
+        countQuery = countQuery.eq('agent_id', agent);
+    }
+
+    const { count, error: countError } = await countQuery;
 
     if (countError) {
         console.error('Error fetching calls count:', countError);
         throw new Error('Failed to fetch calls count');
     }
+
+    console.log('callsData', JSON.stringify(callsData, null, 2))
 
     return {
         calls: callsData || [],

@@ -17,6 +17,7 @@ export async function VapiSetupServer() {
     return (
         <VapiSetup 
             vapiKeyExists={!!organization.vapi_api_key} 
+            vapiPublishableKeyExists={!!organization.vapi_publishable_key}
             organizationName={organization.name}
         />
     )

@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link";
-import { BarChart3, Bot, Workflow, Box, Settings, Phone, CreditCard } from "lucide-react";
+import { BarChart3, Bot, Workflow, Settings, Phone, CreditCard, Hash } from "lucide-react";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
   Sidebar,
@@ -57,7 +57,7 @@ const menuItems = [
   {
     title: "Phone Numbers",
     url: "/app/phone-numbers",
-    icon: Phone,
+    icon: Hash,
   },
   {
     title: "Settings",

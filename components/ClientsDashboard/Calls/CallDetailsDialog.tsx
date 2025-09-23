@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Clock, Phone, User, Calendar, Download, MessageSquare } from "lucide-react";
+import { Vapi } from "@vapi-ai/server-sdk";
 
 interface Agent {
     id: string;
@@ -26,7 +27,7 @@ interface Call {
     client_id: string;
     organization_id: string;
     seconds: number;
-    data: any;
+    data: Vapi.Call;
     created_at: string;
     updated_at: string;
     agents: Agent | null;
@@ -82,10 +83,7 @@ export function CallDetailsDialog({ call, open, onOpenChange }: CallDetailsDialo
     };
 
     const getPhoneNumber = (callData: any) => {
-        if (callData?.phoneNumber) {
-            // Ensure we return a string, not an object
-            return typeof callData.phoneNumber === 'string' ? callData.phoneNumber : String(callData.phoneNumber);
-        }
+
         if (callData?.customer?.number) {
             // Ensure we return a string, not an object
             return typeof callData.customer.number === 'string' ? callData.customer.number : String(callData.customer.number);
@@ -123,6 +121,10 @@ export function CallDetailsDialog({ call, open, onOpenChange }: CallDetailsDialo
             return reason.replace(/-/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
         }
         return 'Unknown';
+    };
+
+    const isWebCall = (callData: any) => {
+        return callData?.type === 'webCall';
     };
 
     return (
@@ -198,12 +200,14 @@ export function CallDetailsDialog({ call, open, onOpenChange }: CallDetailsDialo
                                 </span>
                             </div>
                             
-                            <div>
-                                <span className="font-medium">Phone Number:</span>
-                                <span className="ml-2 text-muted-foreground">
-                                    {getPhoneNumber(call.data)}
-                                </span>
-                            </div>
+                            {!isWebCall(call.data) && (
+                                <div>
+                                    <span className="font-medium">Phone Number:</span>
+                                    <span className="ml-2 text-muted-foreground">
+                                        {getPhoneNumber(call.data)}
+                                    </span>
+                                </div>
+                            )}
                             
                             <div>
                                 <span className="font-medium">End Reason:</span>
