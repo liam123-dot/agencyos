@@ -41,7 +41,7 @@ export async function unassignVapiAgentFromClient(agentId: string) {
 
     // Unassign all phone numbers from Vapi and database
     if (phoneNumbers && phoneNumbers.length > 0) {
-        console.log(`Found ${phoneNumbers.length} phone numbers to unassign`)
+        // console.log(`Found ${phoneNumbers.length} phone numbers to unassign`)
         
         if (agent.platform === 'vapi' && agent.platform_id && organization.vapi_api_key) {
             try {
