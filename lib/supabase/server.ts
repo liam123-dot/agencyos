@@ -12,7 +12,7 @@ export async function createServerClient() {
 
   return createSupabaseServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_OR_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
     {
       cookies: {
         getAll() {
@@ -37,6 +37,6 @@ export async function createServerClient() {
 export async function createServiceClient() {
   return createSupabaseServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_OR_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
   );
 }
