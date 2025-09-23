@@ -13,7 +13,7 @@ CREATE TABLE public.users (
   email text unique not null,
   full_name text,
   avatar_url text,
-  type user_type,
+  type user_type default 'platform',
   selected_organization_id uuid,
   client_id uuid,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
