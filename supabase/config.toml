@@ -187,7 +187,7 @@ enabled = true
 host = "smtp.resend.com"
 port = 587
 user = "resend"
-pass = "env(RESEND_API_KEY)"
+pass = "re_2HPMrjzz_GdzFKUtNUg3w7eC3G7yc316J"
 admin_email = "admin@mail.biziscan.com"
 sender_name = "Biziscan"
 
