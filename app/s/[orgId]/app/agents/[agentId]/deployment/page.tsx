@@ -1,39 +1,39 @@
-import { getAgent } from "@/app/api/agents/getAgent";
-import { Card, CardContent } from "@/components/ui/card";
-import { AgentPhoneNumbers } from "@/components/agents/AgentPhoneNumbers";
-import { Suspense } from "react";
+import { Suspense } from "react"
+import { getAgent } from "@/app/api/agents/getAgent"
+import { AgentPhoneNumbers } from "@/components/agents/AgentPhoneNumbers"
+import { Card, CardContent } from "@/components/ui/card"
 
 export default async function AgentDeploymentPage({
-  params,
+    params,
 }: {
-  params: Promise<{ orgId: string; agentId: string }>;
+    params: Promise<{ orgId: string; agentId: string }>
 }) {
-  const { agentId } = await params;
-  
-  const agent = await getAgent(agentId);
+    const { agentId } = await params
+    const agent = await getAgent(agentId)
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">{agent.data?.name} Deployment</h1>
-        <p className="text-muted-foreground">
-          Configure phone numbers and deployment settings for this agent
-        </p>
-      </div>
-      
-      <Suspense fallback={
-        <Card>
-          <CardContent className="py-8">
-            <div className="flex items-center justify-center">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
-              <span className="ml-2">Loading phone numbers...</span>
-            </div>
-          </CardContent>
-        </Card>
-      }>
-        <AgentPhoneNumbers agentId={agentId} />
-      </Suspense>
-    </div>
-  )
+    return (
+        <div className="space-y-8">
+            <section className="space-y-4">
+                <div className="flex flex-col gap-2">
+                    <h1 className="text-3xl font-semibold tracking-tight text-foreground">Deployment</h1>
+                    <p className="text-base text-muted-foreground">
+                        Manage phone number assignments for {agent.data?.name || agent.platform_id || "this agent"}.
+                    </p>
+                </div>
+            </section>
 
+            <Suspense
+                fallback={
+                    <Card className="border border-dashed border-border/60">
+                        <CardContent className="flex flex-col items-center gap-3 py-12 text-sm text-muted-foreground">
+                            <div className="h-5 w-5 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
+                            Loading phone number assignments…
+                        </CardContent>
+                    </Card>
+                }
+            >
+                <AgentPhoneNumbers agentId={agentId} />
+            </Suspense>
+        </div>
+    )
 }

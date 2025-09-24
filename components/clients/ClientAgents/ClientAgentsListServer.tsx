@@ -8,6 +8,8 @@ import { UnassignAgentButton } from "./UnassignAgentButton"
 export async function ClientAgentsListServer({ clientId }: { clientId: string }) {
     const agents = await getClientAgents(clientId)
 
+
+
     return (
         <Card>
             <CardHeader>
@@ -27,7 +29,7 @@ export async function ClientAgentsListServer({ clientId }: { clientId: string })
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {agents.length > 0 ? (
+                        {agents && agents.length > 0 ? (
                             agents.map((agent) => (
                                 <TableRow key={agent.id}>
                                     <TableCell className="font-medium">

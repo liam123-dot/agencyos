@@ -1,70 +1,80 @@
-import { getAgent } from "@/app/api/agents/getAgent";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { getAgent } from "@/app/api/agents/getAgent"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Activity, Clock, Phone } from "lucide-react"
+
+function formatDuration(seconds: number) {
+    if (seconds === 0) return "0s"
+    const minutes = Math.floor(seconds / 60)
+    const remainingSeconds = seconds % 60
+    if (minutes === 0) return `${remainingSeconds}s`
+    return `${minutes}m ${remainingSeconds}s`
+}
 
 export default async function AgentOverviewPage({
-  params,
+    params,
 }: {
-  params: Promise<{ orgId: string; agentId: string }>;
+    params: Promise<{ orgId: string; agentId: string }>
 }) {
-  const { agentId } = await params;
-  
-  try {
-    const agent = await getAgent(agentId);
-    
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Agent Overview</h1>
-          <p className="text-muted-foreground">
-            View and manage agent details and configuration
-          </p>
-        </div>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Agent Information</CardTitle>
-            <CardDescription>Basic agent details and overview</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <label className="text-sm font-medium">Name</label>
-              <p className="text-sm text-muted-foreground">
-                {agent.data?.name || agent.platform_id || 'Unnamed Agent'}
-              </p>
+    const { agentId } = await params
+
+    try {
+        const agent = await getAgent(agentId)
+        const displayName = agent.data?.name || agent.platform_id || "Unnamed Agent"
+
+        const performanceStats = [
+            {
+                label: "Total calls",
+                value: agent.calls_total ?? 0,
+                icon: Activity,
+            },
+            {
+                label: "Average duration",
+                value: formatDuration(agent.average_duration_seconds ?? 0),
+                icon: Clock,
+            },
+            {
+                label: "Assigned numbers",
+                value: agent.assigned_numbers_count ?? 0,
+                icon: Phone,
+            },
+        ]
+
+        return (
+            <div className="space-y-8">
+                <section className="space-y-6">
+                    <div className="flex flex-col gap-3">
+                        <h1 className="text-3xl font-semibold tracking-tight text-foreground">{displayName}</h1>
+                        <p className="text-base text-muted-foreground">
+                            Monitor performance and configure voice agent behavior.
+                        </p>
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-3">
+                        {performanceStats.map((stat) => (
+                            <div
+                                key={stat.label}
+                                className="rounded-2xl border border-border/50 bg-card p-6"
+                            >
+                                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                                    <span>{stat.label}</span>
+                                    <stat.icon className="h-4 w-4" />
+                                </div>
+                                <p className="mt-3 text-3xl font-semibold text-foreground">{stat.value}</p>
+                            </div>
+                        ))}
+                    </div>
+                </section>
             </div>
-            <div>
-              <label className="text-sm font-medium">Created</label>
-              <p className="text-sm text-muted-foreground">
-                {new Date(agent.created_at).toLocaleDateString()}
-              </p>
+        )
+    } catch (error) {
+        return (
+            <div className="space-y-6">
+                <Card className="border-destructive/20">
+                    <CardContent className="py-12 text-center text-sm text-destructive">
+                        Failed to load agent details. Please refresh the page and try again.
+                    </CardContent>
+                </Card>
             </div>
-            <div>
-              <label className="text-sm font-medium">Last Updated</label>
-              <p className="text-sm text-muted-foreground">
-                {new Date(agent.updated_at).toLocaleDateString()}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  } catch (error) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Agent Overview</h1>
-          <p className="text-muted-foreground">
-            View and manage agent details and configuration
-          </p>
-        </div>
-        
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-destructive">Failed to load agent details. Please try again.</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+        )
+    }
 }
