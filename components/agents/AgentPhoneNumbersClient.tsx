@@ -61,6 +61,31 @@ export function AgentPhoneNumbersClient({
         }
     };
 
+    const handleUnassign = async (phoneNumberId: string, phoneNumber: string) => {
+        setIsUnassigning(phoneNumberId);
+        
+        try {
+            const result = await unassignPhoneNumberFromAgent(phoneNumberId);
+            
+            if (result.success) {
+                // Move the phone number from assigned to available
+                const numberToMove = localAssignedNumbers.find(num => num.id === phoneNumberId);
+                if (numberToMove) {
+                    const unassignedNumber = { ...numberToMove, agent_id: undefined };
+                    setLocalAvailableNumbers(prev => [...prev, unassignedNumber]);
+                    setLocalAssignedNumbers(prev => prev.filter(num => num.id !== phoneNumberId));
+                }
+                toast.success(`Phone number ${phoneNumber} unassigned from ${agentName}`);
+            } else {
+                toast.error(`Failed to unassign phone number: ${result.error}`);
+            }
+        } catch (error) {
+            toast.error('An unexpected error occurred');
+        } finally {
+            setIsUnassigning(null);
+        }
+    };
+
     return (
         <div className="space-y-6">
             {/* Connected Phone Numbers */}
@@ -84,6 +109,7 @@ export function AgentPhoneNumbersClient({
                                         <TableHead>Account SID</TableHead>
                                         <TableHead>Status</TableHead>
                                         <TableHead>Assigned Date</TableHead>
+                                        <TableHead className="w-[120px]">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -111,6 +137,23 @@ export function AgentPhoneNumbersClient({
                                                     hour: '2-digit',
                                                     minute: '2-digit'
                                                 })}
+                                            </TableCell>
+                                            <TableCell>
+                                                <Button
+                                                    onClick={() => handleUnassign(number.id, number.phone_number)}
+                                                    disabled={isUnassigning === number.id}
+                                                    size="sm"
+                                                    variant="outline"
+                                                >
+                                                    {isUnassigning === number.id ? (
+                                                        <>
+                                                            <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                                                            Unassigning...
+                                                        </>
+                                                    ) : (
+                                                        'Unassign'
+                                                    )}
+                                                </Button>
                                             </TableCell>
                                         </TableRow>
                                     ))}
