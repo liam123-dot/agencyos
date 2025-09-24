@@ -136,8 +136,6 @@ export function ClientDashboardSidebar({ user, orgId, clientId, organizationName
       ? organizationName.trim().charAt(0).toUpperCase()
       : 'C';
   const displayName = user.user_metadata?.full_name || user.email?.split("@")[0] || user.email || 'Account';
-  const clientBadgeText = clientId ? `Client ${clientId.slice(0, 6)}` : "Client";
-  const showPlatformBadge = isPlatformUserContext || isPlatformUser;
 
   return (
     <Sidebar collapsible="icon">
@@ -153,25 +151,14 @@ export function ClientDashboardSidebar({ user, orgId, clientId, organizationName
             >
               <Link href={dashboardHref}>
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-sm font-semibold text-primary-foreground">
-                    {organizationInitial}
-                  </div>
                   {state === 'expanded' && (
-                    <div className="flex flex-1 flex-col text-left">
-                      <span className="text-sm font-semibold leading-tight">
-                        {organizationName}
-                      </span>
-                      <span className="text-xs text-muted-foreground">Client Dashboard</span>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {showPlatformBadge && (
-                          <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
-                            Platform Access
-                          </Badge>
-                        )}
-                        <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">
-                          {clientBadgeText}
-                        </Badge>
-                      </div>
+                    <div className="flex flex-1 items-center text-left">
+                      {organizationName}
+                    </div>
+                  )}
+                  {state === 'collapsed' && (
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-sm font-semibold text-primary-foreground">
+                      {organizationInitial}
                     </div>
                   )}
                 </div>

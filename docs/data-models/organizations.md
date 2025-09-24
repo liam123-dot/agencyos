@@ -15,6 +15,8 @@ The organizations table stores information about organizations within the platfo
 | vapi_publishable_key | TEXT | | Vapi publishable key for client-side integrations |
 | stripe_api_key | TEXT | | Stripe API key for payment processing |
 | domain | TEXT | UNIQUE | Custom domain for the organization |
+| logo_url | TEXT | | URL to the organization's logo image stored in Supabase storage |
+| tab_title | TEXT | | Custom browser tab title for the organization |
 | created_at | TIMESTAMP WITH TIME ZONE | DEFAULT NOW(), NOT NULL | Record creation timestamp |
 | updated_at | TIMESTAMP WITH TIME ZONE | DEFAULT NOW(), NOT NULL | Record last update timestamp |
 
@@ -57,6 +59,19 @@ The organizations table stores information about organizations within the platfo
 
 ### Stripe Integration
 - **stripe_api_key**: Used for payment processing and subscription management through Stripe.
+
+## Branding Fields
+
+### Logo Management
+- **logo_url**: Stores the public URL to the organization's logo image. Images are stored in the 'organization-logos' Supabase storage bucket with the path format: `{organization_id}/logo-{timestamp}.{extension}`
+- Supported formats: PNG, JPG, GIF, SVG
+- Maximum file size: 5MB
+- Files are publicly accessible once uploaded
+
+### Tab Title Customization
+- **tab_title**: Custom browser tab title that overrides the default organization name in browser tabs and bookmarks
+- Maximum length: 60 characters
+- Falls back to organization name if not set
 
 ## Security Notes
 - API keys are stored as plain text but should be treated as sensitive data

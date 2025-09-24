@@ -5,6 +5,7 @@ import { SidebarInset } from "@/components/ui/sidebar";
 import { PlatformUserBanner } from "@/components/ClientsDashboard/ClientsSidebar/PlatformUserBanner";
 import { ClientDashboardSidebar } from "@/components/ClientsDashboard/ClientsSidebar/ClientDashboardSidebar";
 import { OrganizationName } from "@/components/ClientsDashboard/ClientsSidebar/OrganizationName";
+import { OrganizationBranding } from "@/components/ClientsDashboard/OrganizationBranding";
 import { DynamicSidebarProvider } from "@/components/dynamic-sidebar-provider";
 import { MainContentWrapper } from "@/components/main-content-wrapper";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -32,6 +33,11 @@ export default async function ClientDashboardLayout({
   return (
     // <PlatformLevelProviders>
       <DynamicSidebarProvider>
+        {/* Dynamic title based on organization branding */}
+        <Suspense fallback={null}>
+          <OrganizationBranding orgId={orgId} />
+        </Suspense>
+        
         <ClientDashboardSidebar 
           user={user.userData} 
           orgId={orgId}

@@ -30,6 +30,10 @@ export async function getPublicOrg(orgId: string) {
         throw new Error('Failed to fetch organization data');
     }
 
-    // only return the name
-    return { name: organization.name };
+    // return name, logo, and tab title for branding
+    return { 
+        name: organization.name,
+        logo_url: organization.logo_url,
+        tab_title: organization.tab_title
+    };
 }

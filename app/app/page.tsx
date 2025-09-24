@@ -1,5 +1,6 @@
 import StripeComponent from "@/components/organizations/StripeSetup/StripeComponent";
 import VapiComponent from "@/components/organizations/VapiSetup/VapiComponent";
+import { BrandingServer } from "@/components/organizations/branding";
 import ConnectDomainComponent from "@/components/organizations/domain/ConnectDomainComponent";
 
 
@@ -10,7 +11,7 @@ export default function DashboardPage() {
         
           <VapiComponent />
           <StripeComponent />
-          <ConnectDomainComponent />
+          <BrandingServer/>
 
       </div>
     </div>
