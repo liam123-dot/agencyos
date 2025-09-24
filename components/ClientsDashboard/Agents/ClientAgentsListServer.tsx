@@ -131,44 +131,40 @@ export async function ClientAgentsListServer({ clientId, orgId }: { clientId?: s
                                         : "—"
 
                                     return (
-                                        <TableRow key={agent.id} className="group border-b border-border/40 transition hover:bg-muted/40">
-                                            <TableCell className="py-4">
-                                                <Link href={agentUrl} className="flex items-center gap-4">
-                                                    {/* <div className="flex h-12 w-12 items-center justify-center rounded-full border border-border bg-background text-sm font-semibold shadow-sm">
-                                                        {initials}
-                                                    </div> */}
-                                                    <div>
-                                                        <p className="text-sm font-semibold leading-tight text-foreground">{displayName}</p>
-                                                        <p className="mt-1 text-xs text-muted-foreground">Agent ID • {agent.id.slice(0, 8)}</p>
+                                        <Link key={agent.id} href={agentUrl} className="contents">
+                                            <TableRow className="group border-b border-border/40 transition hover:bg-muted/40 cursor-pointer">
+                                                <TableCell className="py-4">
+                                                    <div className="flex items-center gap-4">
+                                                        {/* <div className="flex h-12 w-12 items-center justify-center rounded-full border border-border bg-background text-sm font-semibold shadow-sm">
+                                                            {initials}
+                                                        </div> */}
+                                                        <div>
+                                                            <p className="text-sm font-semibold leading-tight text-foreground">{displayName}</p>
+                                                            <p className="mt-1 text-xs text-muted-foreground">Agent ID • {agent.id.slice(0, 8)}</p>
+                                                        </div>
                                                     </div>
-                                                </Link>
-                                            </TableCell>
-                                            <TableCell className="py-4">
-                                                <Link
-                                                    href={agentUrl}
-                                                    className="flex items-center gap-2 text-sm text-muted-foreground transition hover:text-foreground"
-                                                >
-                                                    <Phone className="h-4 w-4" />
-                                                    <span>{phoneLabel}</span>
-                                                </Link>
-                                            </TableCell>
-                                            <TableCell className="py-4">
-                                                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                                                    <Activity className="h-4 w-4 text-muted-foreground" />
-                                                    <span>{agent.calls_count ?? 0}</span>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="py-4 text-right">
-                                                <Link
-                                                    href={agentUrl}
-                                                    className="flex items-center justify-end gap-2 text-sm text-muted-foreground transition hover:text-foreground"
-                                                >
-                                                    <CalendarDays className="h-4 w-4" />
-                                                    <span>{formattedDate}</span>
-                                                    <ChevronRight className="h-4 w-4 opacity-0 transition group-hover:opacity-100" />
-                                                </Link>
-                                            </TableCell>
-                                        </TableRow>
+                                                </TableCell>
+                                                <TableCell className="py-4">
+                                                    <div className="flex items-center gap-2 text-sm text-muted-foreground transition group-hover:text-foreground">
+                                                        <Phone className="h-4 w-4" />
+                                                        <span>{phoneLabel}</span>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="py-4">
+                                                    <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                                                        <Activity className="h-4 w-4 text-muted-foreground" />
+                                                        <span>{agent.calls_count ?? 0}</span>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="py-4 text-right">
+                                                    <div className="flex items-center justify-end gap-2 text-sm text-muted-foreground transition group-hover:text-foreground">
+                                                        <CalendarDays className="h-4 w-4" />
+                                                        <span>{formattedDate}</span>
+                                                        <ChevronRight className="h-4 w-4 opacity-0 transition group-hover:opacity-100" />
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        </Link>
                                     )
                                 })
                             ) : (
