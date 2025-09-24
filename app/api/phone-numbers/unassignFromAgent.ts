@@ -84,7 +84,7 @@ export async function unassignPhoneNumberFromAgent(
             console.log(`[UNASSIGN_PHONE] Removing assistant assignment from Vapi phone number...`);
             
             const updatePayload = {
-                assistantId: null,
+                assistantId: null as any,
                 name: phoneNumber.phone_number, // Reset to just the number
             };
             console.log(`[UNASSIGN_PHONE] Update payload:`, updatePayload);

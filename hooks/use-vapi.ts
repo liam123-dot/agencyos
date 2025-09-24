@@ -1,9 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Vapi from '@vapi-ai/web';
 
-const publicKey = process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY; // Your public key
-
-export const useVapi = () => {
+export const useVapi = (vapiPublishableKey: string) => {
   const [volumeLevel, setVolumeLevel] = useState(0);
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -11,8 +9,8 @@ export const useVapi = () => {
   const vapiRef = useRef<any>(null);
 
   const initializeVapi = useCallback(() => {
-    if (!vapiRef.current && publicKey) {
-      const vapiInstance = new Vapi(publicKey);
+    if (!vapiRef.current && vapiPublishableKey) {
+      const vapiInstance = new Vapi(vapiPublishableKey);
       vapiRef.current = vapiInstance;
 
       // Call started

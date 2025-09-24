@@ -37,9 +37,10 @@ interface AgentSidebarProps {
   agentId: string;
   orgId: string;
   agentData: AgentData;
+  vapiPublishableKey: string;
 }
 
-export function AgentSidebar({ agentId, orgId, agentData }: AgentSidebarProps) {
+export function AgentSidebar({ agentId, orgId, agentData, vapiPublishableKey }: AgentSidebarProps) {
     const pathname = usePathname();
     const searchParams = useSearchParams();
     
@@ -71,7 +72,7 @@ export function AgentSidebar({ agentId, orgId, agentData }: AgentSidebarProps) {
                         <p className="text-xs uppercase tracking-wide text-muted-foreground">Agent</p>
                         <h2 className="text-xl font-semibold tracking-tight text-foreground">{agentName}</h2>
                     </div>
-                    <TestAgentButton assistantId={agentData.platform_id} />
+                    <TestAgentButton assistantId={agentData.platform_id} vapiPublishableKey={vapiPublishableKey} />
                 </div>
             </div>
 

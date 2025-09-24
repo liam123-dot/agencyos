@@ -5,12 +5,12 @@ import { useVapi } from '@/hooks/use-vapi';
 import { Button } from '@/components/ui/button';
 import { Phone, PhoneOff, Loader2 } from 'lucide-react';
 
-export function TestAgentButton({ assistantId }: { assistantId: string }) {
+export function TestAgentButton({ assistantId, vapiPublishableKey }: { assistantId: string, vapiPublishableKey: string }) {
   const {
     start,
     stop,
     isSessionActive,
-  } = useVapi();
+  } = useVapi(vapiPublishableKey);
   
   const [isConnecting, setIsConnecting] = useState(false);
 

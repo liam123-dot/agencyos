@@ -34,6 +34,7 @@ export async function getPublicOrg(orgId: string) {
     return { 
         name: organization.name,
         logo_url: organization.logo_url,
-        tab_title: organization.tab_title
+        tab_title: organization.tab_title,
+        vapi_publishable_key: organization.vapi_publishable_key
     };
 }
