@@ -5,7 +5,7 @@ import Link from "next/link"
 
 const menuItems = [
     { title: "Overview", icon: Bot },
-    { title: "Prompt", icon: FileText },
+    { title: "Configuration", icon: FileText },
     { title: "Deployment", icon: Rocket },
 ]
 
@@ -16,6 +16,7 @@ export function AgentSidebarLoading({ orgId }: { orgId: string }) {
                 <div className="flex flex-col gap-4">
                     <Link
                         href={`/app/agents`}
+                        prefetch={true}
                         className="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
                     >
                         <ChevronLeft className="h-4 w-4" />

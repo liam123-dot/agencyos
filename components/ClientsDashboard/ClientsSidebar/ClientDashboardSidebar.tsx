@@ -149,7 +149,7 @@ export function ClientDashboardSidebar({ user, orgId, clientId, organizationName
                 isCollapsed && "justify-center border-none bg-transparent px-0 py-0"
               )}
             >
-              <Link href={dashboardHref}>
+              <Link href={dashboardHref} prefetch={true}>
                 <div className="flex items-center gap-3">
                   {state === 'expanded' && (
                     <div className="flex flex-1 items-center text-left">
@@ -193,7 +193,7 @@ export function ClientDashboardSidebar({ user, orgId, clientId, organizationName
                             : "justify-center"
                         )}
                       >
-                        <Link href={fullUrl} className="flex w-full items-start gap-3">
+                        <Link href={fullUrl} prefetch={true} className="flex w-full items-start gap-3">
                           <item.icon className="mt-0.5 size-4" />
                           {state === 'expanded' && (
                             <div className="flex flex-1 flex-col gap-1 text-left">

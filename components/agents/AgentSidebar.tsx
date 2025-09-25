@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
-import { ChevronLeft, Bot, FileText, Rocket } from "lucide-react";
+import { ChevronLeft, Bot, FileText, Rocket, Hammer } from "lucide-react";
 import { TestAgentButton } from "./TestAgentButton";
 
 const menuItems = [
@@ -14,9 +14,14 @@ const menuItems = [
       icon: Bot,
     },
     {
-      title: 'Prompt',
-      url: (orgId: string, agentId: string, baseUrl: string, queryString: string) => `${baseUrl}/app/agents/${agentId}/prompt${queryString}`,
+      title: 'Configuration',
+      url: (orgId: string, agentId: string, baseUrl: string, queryString: string) => `${baseUrl}/app/agents/${agentId}/configuration${queryString}`,
       icon: FileText,
+    },
+    {
+      title: 'Tools',
+      url: (orgId: string, agentId: string, baseUrl: string, queryString: string) => `${baseUrl}/app/agents/${agentId}/tools${queryString}`,
+      icon: Hammer,
     },
     {
       title: 'Deployment',
@@ -61,6 +66,7 @@ export function AgentSidebar({ agentId, orgId, agentData, vapiPublishableKey }: 
             <div className="flex flex-col gap-4">
                 <Link
                     href={`${baseUrl}/app/agents${queryString}`}
+                    prefetch={true}
                     className="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
                 >
                     <ChevronLeft className="h-4 w-4" />
@@ -86,6 +92,7 @@ export function AgentSidebar({ agentId, orgId, agentData, vapiPublishableKey }: 
                         <Link
                             key={item.title}
                             href={itemUrl}
+                            prefetch={true}
                             className={cn(
                                 "group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200",
                                 pathname === pathUrl

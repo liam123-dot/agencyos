@@ -11,7 +11,7 @@ export async function Navigation() {
     <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center space-x-4">
-          <Link href="/" className="flex items-center space-x-2">
+          <Link href="/" prefetch={true} className="flex items-center space-x-2">
             <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
               <span className="text-primary-foreground font-bold text-sm">W</span>
             </div>
@@ -22,15 +22,15 @@ export async function Navigation() {
         <div className="flex items-center space-x-4">
           {user ? (
             <Button asChild variant="ghost" size="sm">
-              <Link href="/app">Dashboard</Link>
+              <Link href="/app" prefetch={true}>Dashboard</Link>
             </Button>
           ) : (
             <div className="flex items-center space-x-2">
               <Button asChild variant="ghost" size="sm">
-                <Link href="/auth">Sign in</Link>
+                <Link href="/auth" prefetch={true}>Sign in</Link>
               </Button>
               <Button asChild size="sm">
-                <Link href="/auth/sign-up">Sign up</Link>
+                <Link href="/auth/sign-up" prefetch={true}>Sign up</Link>
               </Button>
             </div>
           )}

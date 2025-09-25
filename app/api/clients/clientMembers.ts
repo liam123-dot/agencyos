@@ -2,6 +2,8 @@
 
 import { getOrg } from "../user/selected-organization/getOrg"
 import { getClient } from "./getClient"
+import { getUser } from "../user/getUser"
+import { redirect } from "next/navigation"
 import crypto from 'crypto'
 
 export async function getClientMembers(id: string) {
@@ -63,14 +65,32 @@ export async function inviteClientMember(clientId: string, email: string) {
         
 }
 
-export async function authorizedToAccessClient(clientId: string) {
+export async function authorizedToAccessClient(clientId?: string) {
+    let finalClientId = clientId
+    
+    // If no clientId provided, try to get it from the user
+    if (!finalClientId) {
+        try {
+            const { userData } = await getUser()
+            finalClientId = userData.client_id
+            
+            if (!finalClientId) {
+                // No client_id available anywhere, redirect to off
+                redirect('/auth')
+            }
+        } catch (error) {
+            // User authentication failed, redirect to off
+            redirect('/auth')
+        }
+    }
+
     const { organization, userData, supabaseServerClient } = await getOrg()
-    const client = await getClient(clientId)
+    const client = await getClient(finalClientId)
     if (!client) {
         return false
     }
     if (!organization) {
-        if (userData.client_id !== clientId) {
+        if (userData.client_id !== finalClientId) {
             return false
         }
     } else {

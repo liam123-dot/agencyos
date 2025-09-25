@@ -57,6 +57,7 @@ export function ClientSidebar({ id }: { id: string }) {
             >
               <Link 
                 href={`/s/${currentOrganization?.id}/app?client_id=${id}`}
+                prefetch={true}
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -71,6 +72,7 @@ export function ClientSidebar({ id }: { id: string }) {
           <Link
             key={item.title}
             href={item.url(id)}
+            prefetch={true}
             className={cn(
                 'px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 flex items-center',
                 pathname === item.url(id) 
