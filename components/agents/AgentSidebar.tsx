@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
-import { ChevronLeft, Bot, FileText, Rocket, Hammer } from "lucide-react";
+import { ChevronLeft, Bot, FileText, Rocket, Hammer, Phone } from "lucide-react";
 import { TestAgentButton } from "./TestAgentButton";
 
 const menuItems = [
@@ -36,6 +36,7 @@ interface AgentData {
   data?: {
     name?: string;
   };
+  assigned_phone_number?: string | null;
 }
 
 interface AgentSidebarProps {
@@ -77,6 +78,12 @@ export function AgentSidebar({ agentId, orgId, agentData, vapiPublishableKey }: 
                     <div className="space-y-1">
                         <p className="text-xs uppercase tracking-wide text-muted-foreground">Agent</p>
                         <h2 className="text-xl font-semibold tracking-tight text-foreground">{agentName}</h2>
+                        {agentData.assigned_phone_number && (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Phone className="h-3 w-3" />
+                                <span>{agentData.assigned_phone_number}</span>
+                            </div>
+                        )}
                     </div>
                     <TestAgentButton assistantId={agentData.platform_id} vapiPublishableKey={vapiPublishableKey} />
                 </div>
