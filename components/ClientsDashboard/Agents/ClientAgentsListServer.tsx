@@ -131,7 +131,7 @@ export async function ClientAgentsListServer({ clientId, orgId }: { clientId?: s
                                         : "—"
 
                                     return (
-                                        <Link key={agent.id} href={agentUrl} className="contents">
+                                        <Link key={agent.id} href={agentUrl} className="contents" prefetch={true}>
                                             <TableRow className="group border-b border-border/40 transition hover:bg-muted/40 cursor-pointer">
                                                 <TableCell className="py-4">
                                                     <div className="flex items-center gap-4">
