@@ -8,23 +8,43 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   try {
     const { orgId } = await params;
-    const { name, tab_title, logo_url } = await getPublicOrg(orgId);
+    const { name, tab_title, logo_url, domain } = await getPublicOrg(orgId);
     
+    console.log('Organization metadata:', { name, tab_title, logo_url });
     const title = tab_title || name;
-    const icons = logo_url ? [
-      {
-        rel: 'icon',
-        url: logo_url,
-      },
-      {
-        rel: 'apple-touch-icon',
-        url: logo_url,
-      },
-    ] : undefined;
+    
+    // Next.js metadata icons configuration
+    const icons = logo_url ? {
+      icon: [
+        {
+          url: logo_url,
+          sizes: '32x32',
+        },
+        {
+          url: logo_url,
+          sizes: '16x16', 
+        }
+      ],
+      apple: [
+        {
+          url: logo_url,
+          sizes: '180x180',
+        }
+      ],
+      shortcut: [
+        {
+          url: logo_url,
+        }
+      ],
+    } : {
+      icon: '/favicon.ico',
+      shortcut: '/favicon.ico',
+    };
 
     return {
       title,
       icons,
+      metadataBase: new URL(`https://${domain}`),
     };
   } catch (error) {
     console.error('Failed to generate metadata:', error);

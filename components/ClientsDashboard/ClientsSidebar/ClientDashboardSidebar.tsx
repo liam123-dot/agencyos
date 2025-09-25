@@ -30,6 +30,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { AppUserDropdown } from "@/components/app-user-dropdown";
 import { cn } from "@/lib/utils";
+import { OrganizationLogo } from "./OrganizationLogo";
 
 interface ClientDashboardSidebarProps {
   user: {
@@ -42,6 +43,10 @@ interface ClientDashboardSidebarProps {
   orgId: string;
   clientId: string;
   organizationName: ReactNode;
+  organizationData: {
+    name: string;
+    logo_url?: string | null;
+  };
   isPlatformUser: boolean;
 }
 
@@ -117,7 +122,7 @@ const navigationSections: NavigationSection[] = [
   },
 ];
 
-export function ClientDashboardSidebar({ user, orgId, clientId, organizationName, isPlatformUser }: ClientDashboardSidebarProps) {
+export function ClientDashboardSidebar({ user, orgId, clientId, organizationName, organizationData, isPlatformUser }: ClientDashboardSidebarProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { state } = useSidebar();
@@ -132,8 +137,8 @@ export function ClientDashboardSidebar({ user, orgId, clientId, organizationName
   const dashboardHref = `${baseUrl}/app${queryString}`;
   const isCollapsed = state === 'collapsed';
   const organizationInitial =
-    typeof organizationName === 'string' && organizationName.trim().length > 0
-      ? organizationName.trim().charAt(0).toUpperCase()
+    organizationData.name && organizationData.name.trim().length > 0
+      ? organizationData.name.trim().charAt(0).toUpperCase()
       : 'C';
   const displayName = user.user_metadata?.full_name || user.email?.split("@")[0] || user.email || 'Account';
 
@@ -157,9 +162,11 @@ export function ClientDashboardSidebar({ user, orgId, clientId, organizationName
                     </div>
                   )}
                   {state === 'collapsed' && (
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-sm font-semibold text-primary-foreground">
-                      {organizationInitial}
-                    </div>
+                    <OrganizationLogo 
+                      name={organizationData.name} 
+                      logoUrl={organizationData.logo_url} 
+                      size={40} 
+                    />
                   )}
                 </div>
               </Link>

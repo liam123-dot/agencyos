@@ -34,9 +34,18 @@ export function VapiTransferCallTool({ tool, onSave }: { tool: TransferCallTool,
     const [transferNumber, setTransferNumber] = useState(destination.number || "")
     const [transferMessage, setTransferMessage] = useState(destination.message || "")
     const [transferDescription, setTransferDescription] = useState(destination.description || "")
-    const [transferMode, setTransferMode] = useState(destination.transferPlan?.mode || "warm-transfer-say-message")
+    const [transferMode, setTransferMode] = useState<"warm-transfer-say-message" | "warm-transfer-say-summary" | "cold-transfer">(destination.transferPlan?.mode || "warm-transfer-say-message")
     const [transferPlanMessage, setTransferPlanMessage] = useState(destination.transferPlan?.message || "")
     const [numberE164CheckEnabled, setNumberE164CheckEnabled] = useState<boolean>(destination.numberE164CheckEnabled || true)
+    
+    // Summary plan state
+    const [systemMessage, setSystemMessage] = useState(
+        destination.transferPlan?.summaryPlan?.messages?.find(m => m.role === "system")?.content || "summary generation"
+    )
+    const [userMessageTemplate, setUserMessageTemplate] = useState(
+        destination.transferPlan?.summaryPlan?.messages?.find(m => m.role === "user")?.content || "bey there"
+    )
+    const [summaryTimeout, setSummaryTimeout] = useState(destination.transferPlan?.summaryPlan?.timeoutSeconds || 5)
     
     const [saving, setSaving] = useState(false)
 
@@ -55,9 +64,20 @@ export function VapiTransferCallTool({ tool, onSave }: { tool: TransferCallTool,
                     message: transferMessage,
                     description: transferDescription,
                     transferPlan: {
-                        mode: transferMode,
-                        message: transferPlanMessage,
-                        sipVerb: "refer"
+                        mode: transferMode as "warm-transfer-say-message" | "warm-transfer-say-summary" | "cold-transfer",
+                        ...(transferMode === "warm-transfer-say-message" ? { message: transferPlanMessage } : {}),
+                        sipVerb: "refer",
+                        ...(transferMode === "warm-transfer-say-summary" ? {
+                            summaryPlan: {
+                                enabled: true,
+                                messages: [
+                                    { role: "system", content: systemMessage },
+                                    { role: "user", content: userMessageTemplate }
+                                ],
+                                timeoutSeconds: summaryTimeout,
+                                useAssistantLlm: true
+                            }
+                        } : {})
                     },
                     numberE164CheckEnabled
                 }]
@@ -151,27 +171,80 @@ export function VapiTransferCallTool({ tool, onSave }: { tool: TransferCallTool,
 
                 <div className="space-y-2">
                     <Label htmlFor="transfer-mode">Transfer Mode</Label>
-                    <Select value={transferMode} onValueChange={setTransferMode} disabled={isFormDisabled}>
+                    <Select value={transferMode} onValueChange={(value) => setTransferMode(value as "warm-transfer-say-message" | "warm-transfer-say-summary" | "cold-transfer")} disabled={isFormDisabled}>
                         <SelectTrigger>
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="warm-transfer-say-message">Warm Transfer (Say Message)</SelectItem>
+                            <SelectItem value="warm-transfer-say-summary">Warm Transfer (Say Summary)</SelectItem>
                             <SelectItem value="cold-transfer">Cold Transfer</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
 
-                <div className="space-y-2">
-                    <Label htmlFor="transfer-plan-message">Transfer Plan Message</Label>
-                    <Input
-                        id="transfer-plan-message"
-                        value={transferPlanMessage}
-                        onChange={(e) => setTransferPlanMessage(e.target.value)}
-                        placeholder="Internal transfer message"
-                        disabled={isFormDisabled}
-                    />
-                </div>
+                {transferMode === "warm-transfer-say-message" && (
+                    <div className="space-y-2">
+                        <Label htmlFor="transfer-plan-message">Transfer Plan Message</Label>
+                        <Input
+                            id="transfer-plan-message"
+                            value={transferPlanMessage}
+                            onChange={(e) => setTransferPlanMessage(e.target.value)}
+                            placeholder="Internal transfer message"
+                            disabled={isFormDisabled}
+                        />
+                    </div>
+                )}
+
+                {transferMode === "warm-transfer-say-summary" && (
+                                <div className="space-y-4">
+                                    <h4 className="text-sm font-medium text-muted-foreground">Summary Messages</h4>
+                                    
+                                    <div className="space-y-2">
+                                        <Label htmlFor="system-message">System Message</Label>
+                                        <Textarea
+                                            id="system-message"
+                                            value={systemMessage}
+                                            onChange={(e) => setSystemMessage(e.target.value)}
+                                            placeholder="Instructions for AI model on how to summarize the call"
+                                            disabled={isFormDisabled}
+                                            rows={3}
+                                        />
+                                        <p className="text-xs text-muted-foreground">
+                                            This guides the AI on how to create the summary but is not spoken to the recipient.
+                                        </p>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="user-message-template">User Message Template</Label>
+                                        <Textarea
+                                            id="user-message-template"
+                                            value={userMessageTemplate}
+                                            onChange={(e) => setUserMessageTemplate(e.target.value)}
+                                            placeholder="Template for the content to be summarized (e.g., transcript data)"
+                                            disabled={isFormDisabled}
+                                            rows={3}
+                                        />
+                                        <p className="text-xs text-muted-foreground">
+                                            This provides the actual content for the AI to summarize. Use placeholders like {"{{transcript}}"} for dynamic content.
+                                        </p>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="summary-timeout">Timeout (seconds)</Label>
+                                        <Input
+                                            id="summary-timeout"
+                                            type="number"
+                                            value={summaryTimeout}
+                                            onChange={(e) => setSummaryTimeout(parseInt(e.target.value) || 5)}
+                                            placeholder="5"
+                                            disabled={isFormDisabled}
+                                            min="1"
+                                            max="300"
+                                        />
+                                    </div>
+                                </div>
+                )}
 
                 <div className="flex items-center space-x-2">
                     <Checkbox

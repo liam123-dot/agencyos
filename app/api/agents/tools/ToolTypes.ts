@@ -94,7 +94,7 @@ export interface TransferCallTool {
     message?: string;
     description?: string;
     transferPlan?: {
-      mode: string;
+      mode: "warm-transfer-say-message" | "warm-transfer-say-summary" | "cold-transfer";
       message?: string;
       sipVerb?: string;
       summaryPlan?: {
@@ -171,7 +171,7 @@ export interface CreateTransferCallToolDto {
     message?: string;
     description?: string;
     transferPlan?: {
-      mode: string;
+      mode: "warm-transfer-say-message" | "warm-transfer-say-summary" | "cold-transfer";
       message?: string;
       sipVerb?: string;
       summaryPlan?: {
@@ -245,7 +245,7 @@ export interface UpdateTransferCallToolDto {
     message?: string;
     description?: string;
     transferPlan?: {
-      mode: string;
+      mode: "warm-transfer-say-message" | "warm-transfer-say-summary" | "cold-transfer";
       message?: string;
       sipVerb?: string;
       summaryPlan?: {
