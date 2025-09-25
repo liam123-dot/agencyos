@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from "react"
-import { useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { getAnalytics } from "@/app/api/analytics/getAnalytics"
 import { getClientAgents } from "@/app/api/agents/getClientAgents"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -36,9 +36,44 @@ interface AnalyticsData {
     }
 }
 
-export default function ClientAnalyticsComponent() {
+interface ClientAnalyticsComponentProps {
+    searchParams?: Record<string, string | string[] | undefined>
+}
+
+export default function ClientAnalyticsComponent({ searchParams: initialSearchParams }: ClientAnalyticsComponentProps) {
+    const router = useRouter()
     const searchParams = useSearchParams()
-    const clientId = searchParams.get('client_id') || undefined
+    const clientId = searchParams.get('client_id') || (
+        Array.isArray(initialSearchParams?.client_id) 
+            ? initialSearchParams?.client_id[0] 
+            : initialSearchParams?.client_id
+    ) || undefined
+
+    // Helper function to parse date from URL param
+    const parseUrlDate = (dateStr: string | string[] | undefined): Date | undefined => {
+        if (!dateStr || Array.isArray(dateStr)) return undefined
+        try {
+            const parsed = new Date(dateStr + 'T00:00:00')
+            return isNaN(parsed.getTime()) ? undefined : parsed
+        } catch {
+            return undefined
+        }
+    }
+
+    // Helper function to update URL params
+    const updateUrlParams = (updates: Record<string, string | undefined>) => {
+        const params = new URLSearchParams(searchParams.toString())
+        
+        Object.entries(updates).forEach(([key, value]) => {
+            if (value === undefined || value === '') {
+                params.delete(key)
+            } else {
+                params.set(key, value)
+            }
+        })
+        
+        router.replace(`?${params.toString()}`, { scroll: false })
+    }
 
     // Defaults: last 7 days, daily granularity
     const today = useMemo(() => new Date(), [])
@@ -48,13 +83,108 @@ export default function ClientAnalyticsComponent() {
         return d
     }, [])
 
-    const [dateRangeStart, setDateRangeStart] = useState<Date | undefined>(sevenDaysAgo)
-    const [dateRangeEnd, setDateRangeEnd] = useState<Date | undefined>(today)
-    const [granularity, setGranularity] = useState<Granularity>('day')
-    const [agentId, setAgentId] = useState<string | undefined>(undefined)
+    // Initialize state from URL params or defaults
+    const getInitialDateStart = () => {
+        const urlDate = parseUrlDate(searchParams.get('start_date') || initialSearchParams?.start_date)
+        return urlDate || sevenDaysAgo
+    }
+    
+    const getInitialDateEnd = () => {
+        const urlDate = parseUrlDate(searchParams.get('end_date') || initialSearchParams?.end_date)
+        return urlDate || today
+    }
+    
+    const getInitialGranularity = (): Granularity => {
+        const urlGranularity = searchParams.get('granularity') || (
+            Array.isArray(initialSearchParams?.granularity) 
+                ? initialSearchParams?.granularity[0] 
+                : initialSearchParams?.granularity
+        )
+        return (urlGranularity === 'hour' || urlGranularity === 'day' || urlGranularity === 'week' || urlGranularity === 'month') 
+            ? urlGranularity 
+            : 'day'
+    }
+    
+    const getInitialAgentId = () => {
+        const urlAgentId = searchParams.get('agent_id') || (
+            Array.isArray(initialSearchParams?.agent_id) 
+                ? initialSearchParams?.agent_id[0] 
+                : initialSearchParams?.agent_id
+        )
+        return Array.isArray(urlAgentId) ? undefined : urlAgentId || undefined
+    }
+
+    const [dateRangeStart, setDateRangeStartState] = useState<Date | undefined>(getInitialDateStart())
+    const [dateRangeEnd, setDateRangeEndState] = useState<Date | undefined>(getInitialDateEnd())
+    const [granularity, setGranularityState] = useState<Granularity>(getInitialGranularity())
+    const [agentId, setAgentIdState] = useState<string | undefined>(getInitialAgentId())
     const [agents, setAgents] = useState<AgentOption[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null)
+
+    // Wrapper functions that update both state and URL
+    const setDateRangeStart = (date: Date | undefined) => {
+        setDateRangeStartState(date)
+        // Update URL immediately
+        const params = new URLSearchParams(searchParams.toString())
+        if (date) {
+            params.set('start_date', formatDate(date, 'yyyy-MM-dd'))
+        } else {
+            params.delete('start_date')
+        }
+        router.replace(`?${params.toString()}`, { scroll: false })
+    }
+
+    const setDateRangeEnd = (date: Date | undefined) => {
+        setDateRangeEndState(date)
+        // Update URL immediately
+        const params = new URLSearchParams(searchParams.toString())
+        if (date) {
+            params.set('end_date', formatDate(date, 'yyyy-MM-dd'))
+        } else {
+            params.delete('end_date')
+        }
+        router.replace(`?${params.toString()}`, { scroll: false })
+    }
+
+    const setGranularity = (newGranularity: Granularity) => {
+        setGranularityState(newGranularity)
+        // Update URL immediately
+        const params = new URLSearchParams(searchParams.toString())
+        params.set('granularity', newGranularity)
+        router.replace(`?${params.toString()}`, { scroll: false })
+    }
+
+    const setAgentId = (newAgentId: string | undefined) => {
+        setAgentIdState(newAgentId)
+        // Update URL immediately
+        const params = new URLSearchParams(searchParams.toString())
+        if (newAgentId) {
+            params.set('agent_id', newAgentId)
+        } else {
+            params.delete('agent_id')
+        }
+        router.replace(`?${params.toString()}`, { scroll: false })
+    }
+
+    // Batch URL update function for multiple parameters
+    const setBatchDateRange = (startDate: Date | undefined, endDate: Date | undefined) => {
+        setDateRangeStartState(startDate)
+        setDateRangeEndState(endDate)
+        // Update URL with both dates at once
+        const params = new URLSearchParams(searchParams.toString())
+        if (startDate) {
+            params.set('start_date', formatDate(startDate, 'yyyy-MM-dd'))
+        } else {
+            params.delete('start_date')
+        }
+        if (endDate) {
+            params.set('end_date', formatDate(endDate, 'yyyy-MM-dd'))
+        } else {
+            params.delete('end_date')
+        }
+        router.replace(`?${params.toString()}`, { scroll: false })
+    }
 
     // Fetch agents (client-scoped)
     useEffect(() => {
@@ -219,8 +349,8 @@ export default function ClientAnalyticsComponent() {
                                     className="text-xs rounded-md border px-2 py-1 hover:bg-accent"
                                     onClick={() => {
                                         const now = new Date()
-                                        setDateRangeStart(new Date(now.getFullYear(), now.getMonth(), now.getDate()))
-                                        setDateRangeEnd(now)
+                                        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+                                        setBatchDateRange(startOfDay, now)
                                     }}
                                 >
                                     Today
@@ -231,8 +361,9 @@ export default function ClientAnalyticsComponent() {
                                         const now = new Date()
                                         const yesterday = new Date(now)
                                         yesterday.setDate(now.getDate() - 1)
-                                        setDateRangeStart(new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate()))
-                                        setDateRangeEnd(new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 23, 59, 59))
+                                        const startOfYesterday = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate())
+                                        const endOfYesterday = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 23, 59, 59)
+                                        setBatchDateRange(startOfYesterday, endOfYesterday)
                                     }}
                                 >
                                     Yesterday
@@ -243,8 +374,8 @@ export default function ClientAnalyticsComponent() {
                                         const end = new Date()
                                         const start = new Date()
                                         start.setDate(end.getDate() - 6)
-                                        setDateRangeStart(new Date(start.getFullYear(), start.getMonth(), start.getDate()))
-                                        setDateRangeEnd(end)
+                                        const startOfDay = new Date(start.getFullYear(), start.getMonth(), start.getDate())
+                                        setBatchDateRange(startOfDay, end)
                                     }}
                                 >
                                     Last 7 days
@@ -255,8 +386,8 @@ export default function ClientAnalyticsComponent() {
                                         const end = new Date()
                                         const start = new Date()
                                         start.setDate(end.getDate() - 29)
-                                        setDateRangeStart(new Date(start.getFullYear(), start.getMonth(), start.getDate()))
-                                        setDateRangeEnd(end)
+                                        const startOfDay = new Date(start.getFullYear(), start.getMonth(), start.getDate())
+                                        setBatchDateRange(startOfDay, end)
                                     }}
                                 >
                                     Last 30 days
