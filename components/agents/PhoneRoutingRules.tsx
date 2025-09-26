@@ -10,6 +10,17 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { 
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { 
     Clock, 
     Plus, 
     Trash2, 
@@ -19,12 +30,13 @@ import {
     AlertTriangle,
     CheckCircle,
     RotateCcw,
-    Edit
+    Edit,
+    Loader2
 } from "lucide-react"
 import { toast } from "sonner"
 
 import { ClientRoutingRule, RoutingRuleDTO } from "@/lib/types/routing-rules"
-import { createRoutingRule, updateRoutingRule, deleteRoutingRule } from "@/app/api/agents/routing-rules/actions"
+import { createRoutingRule, updateRoutingRule, deleteRoutingRule, toggleRoutingRule } from "@/app/api/agents/routing-rules/actions"
 
 interface PhoneRoutingRulesClientProps {
     agentId: string
@@ -47,6 +59,10 @@ export function PhoneRoutingRulesClient({ agentId, agentName, assignedNumbers, i
     const [rules, setRules] = useState<ClientRoutingRule[]>(initialRules)
     const [isAddingRule, setIsAddingRule] = useState(false)
     const [editingRuleId, setEditingRuleId] = useState<string | null>(null)
+    const [isSaving, setIsSaving] = useState(false)
+    const [deletingRuleId, setDeletingRuleId] = useState<string | null>(null)
+    const [togglingRuleId, setTogglingRuleId] = useState<string | null>(null)
+    const [ruleToDelete, setRuleToDelete] = useState<ClientRoutingRule | null>(null)
     const [newRule, setNewRule] = useState<Partial<ClientRoutingRule>>({
         name: '',
         enabled: true,
@@ -107,6 +123,8 @@ export function PhoneRoutingRulesClient({ agentId, agentName, assignedNumbers, i
             toast.error('Please fill in all required fields')
             return
         }
+
+        setIsSaving(true)
 
         try {
             if (editingRuleId) {
@@ -209,6 +227,8 @@ export function PhoneRoutingRulesClient({ agentId, agentName, assignedNumbers, i
         } catch (error) {
             console.error('Error saving routing rule:', error)
             toast.error('An unexpected error occurred')
+        } finally {
+            setIsSaving(false)
         }
     }
 
@@ -224,12 +244,16 @@ export function PhoneRoutingRulesClient({ agentId, agentName, assignedNumbers, i
         setIsAddingRule(true)
     }
 
-    const deleteRule = async (id: string) => {
+    const confirmDeleteRule = async () => {
+        if (!ruleToDelete) return
+        
+        setDeletingRuleId(ruleToDelete.id)
+        
         try {
-            const result = await deleteRoutingRule(id)
+            const result = await deleteRoutingRule(ruleToDelete.id)
             
             if (result.success) {
-                setRules(prev => prev.filter(rule => rule.id !== id))
+                setRules(prev => prev.filter(rule => rule.id !== ruleToDelete.id))
                 toast.success('Routing rule deleted')
             } else {
                 toast.error(result.error || 'Failed to delete routing rule')
@@ -237,13 +261,36 @@ export function PhoneRoutingRulesClient({ agentId, agentName, assignedNumbers, i
         } catch (error) {
             console.error('Error deleting routing rule:', error)
             toast.error('An unexpected error occurred')
+        } finally {
+            setDeletingRuleId(null)
+            setRuleToDelete(null)
         }
     }
 
-    const toggleRule = (id: string) => {
-        setRules(prev => prev.map(rule => 
-            rule.id === id ? { ...rule, enabled: !rule.enabled } : rule
-        ))
+    const toggleRule = async (id: string) => {
+        const rule = rules.find(r => r.id === id)
+        if (!rule) return
+
+        const newEnabledState = !rule.enabled
+        setTogglingRuleId(id)
+
+        try {
+            const result = await toggleRoutingRule(id, newEnabledState)
+            
+            if (result.success) {
+                setRules(prev => prev.map(rule => 
+                    rule.id === id ? { ...rule, enabled: newEnabledState } : rule
+                ))
+                toast.success(`Routing rule ${newEnabledState ? 'enabled' : 'disabled'}`)
+            } else {
+                toast.error(result.error || 'Failed to update routing rule')
+            }
+        } catch (error) {
+            console.error('Error toggling routing rule:', error)
+            toast.error('An unexpected error occurred')
+        } finally {
+            setTogglingRuleId(null)
+        }
     }
 
     const cancelEdit = () => {
@@ -349,26 +396,62 @@ export function PhoneRoutingRulesClient({ agentId, agentName, assignedNumbers, i
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-2">
-                                                    <Switch
-                                                        checked={rule.enabled}
-                                                        onCheckedChange={() => toggleRule(rule.id)}
-                                                    />
+                                                    <div className="relative">
+                                                        <Switch
+                                                            checked={rule.enabled}
+                                                            onCheckedChange={() => toggleRule(rule.id)}
+                                                            disabled={isSaving || deletingRuleId !== null || togglingRuleId === rule.id}
+                                                        />
+                                                        {togglingRuleId === rule.id && (
+                                                            <div className="absolute inset-0 flex items-center justify-center">
+                                                                <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
                                                         onClick={() => editRule(rule)}
+                                                        disabled={isSaving || deletingRuleId !== null || togglingRuleId !== null}
                                                         className="text-muted-foreground hover:text-foreground"
                                                     >
                                                         <Edit className="h-4 w-4" />
                                                     </Button>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => deleteRule(rule.id)}
-                                                        className="text-destructive hover:text-destructive"
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => setRuleToDelete(rule)}
+                                                                disabled={deletingRuleId === rule.id || isSaving || togglingRuleId !== null}
+                                                                className="text-destructive hover:text-destructive"
+                                                            >
+                                                                {deletingRuleId === rule.id ? (
+                                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                                ) : (
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                )}
+                                                            </Button>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent>
+                                                            <AlertDialogHeader>
+                                                                <AlertDialogTitle>Delete Routing Rule</AlertDialogTitle>
+                                                                <AlertDialogDescription>
+                                                                    Are you sure you want to delete the routing rule "{rule.name}"? 
+                                                                    This action cannot be undone and will affect how calls are routed to this agent.
+                                                                </AlertDialogDescription>
+                                                            </AlertDialogHeader>
+                                                            <AlertDialogFooter>
+                                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                <AlertDialogAction
+                                                                    onClick={confirmDeleteRule}
+                                                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                                                >
+                                                                    Delete Rule
+                                                                </AlertDialogAction>
+                                                            </AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
                                                 </div>
                                             </div>
                                         </CardContent>
@@ -383,7 +466,11 @@ export function PhoneRoutingRulesClient({ agentId, agentName, assignedNumbers, i
                 <Separator />
                 
                 {!isAddingRule ? (
-                    <Button onClick={() => setIsAddingRule(true)} className="w-full">
+                    <Button 
+                        onClick={() => setIsAddingRule(true)} 
+                        disabled={isSaving || deletingRuleId !== null || togglingRuleId !== null}
+                        className="w-full"
+                    >
                         <Plus className="h-4 w-4 mr-2" />
                         Add New Rule
                     </Button>
@@ -403,6 +490,7 @@ export function PhoneRoutingRulesClient({ agentId, agentName, assignedNumbers, i
                                     placeholder="e.g., Business Hours"
                                     value={newRule.name || ''}
                                     onChange={(e) => setNewRule(prev => ({ ...prev, name: e.target.value }))}
+                                    disabled={isSaving}
                                 />
                             </div>
 
@@ -422,6 +510,7 @@ export function PhoneRoutingRulesClient({ agentId, agentName, assignedNumbers, i
                                                 timeRange: { ...prev.timeRange!, start: e.target.value }
                                             }))}
                                             className="w-32"
+                                            disabled={isSaving}
                                         />
                                         <span className="text-muted-foreground">to</span>
                                         <Input
@@ -432,6 +521,7 @@ export function PhoneRoutingRulesClient({ agentId, agentName, assignedNumbers, i
                                                 timeRange: { ...prev.timeRange!, end: e.target.value }
                                             }))}
                                             className="w-32"
+                                            disabled={isSaving}
                                         />
                                     </div>
                                 </div>
@@ -449,6 +539,7 @@ export function PhoneRoutingRulesClient({ agentId, agentName, assignedNumbers, i
                                             key={day.key}
                                             variant={newRule.days?.includes(day.key) ? "default" : "outline"}
                                             size="sm"
+                                            disabled={isSaving}
                                             onClick={() => {
                                                 const currentDays = newRule.days || []
                                                 const newDays = currentDays.includes(day.key)
@@ -474,6 +565,7 @@ export function PhoneRoutingRulesClient({ agentId, agentName, assignedNumbers, i
                                     placeholder="+1 (555) 123-4567"
                                     value={newRule.routeTo || ''}
                                     onChange={(e) => setNewRule(prev => ({ ...prev, routeTo: e.target.value }))}
+                                    disabled={isSaving}
                                 />
                             </div>
 
@@ -494,8 +586,17 @@ export function PhoneRoutingRulesClient({ agentId, agentName, assignedNumbers, i
 
                             {/* Actions */}
                             <div className="flex gap-2">
-                                <Button onClick={addRule} className="flex-1">
-                                    {editingRuleId ? (
+                                <Button 
+                                    onClick={addRule} 
+                                    disabled={isSaving}
+                                    className="flex-1"
+                                >
+                                    {isSaving ? (
+                                        <>
+                                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                            {editingRuleId ? 'Updating...' : 'Adding...'}
+                                        </>
+                                    ) : editingRuleId ? (
                                         <>
                                             <CheckCircle className="h-4 w-4 mr-2" />
                                             Update Rule
@@ -510,6 +611,7 @@ export function PhoneRoutingRulesClient({ agentId, agentName, assignedNumbers, i
                                 <Button
                                     variant="outline"
                                     onClick={cancelEdit}
+                                    disabled={isSaving}
                                 >
                                     Cancel
                                 </Button>

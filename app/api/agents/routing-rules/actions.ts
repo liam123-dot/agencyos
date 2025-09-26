@@ -206,3 +206,28 @@ export async function deleteRoutingRule(ruleId: string, clientId?: string): Prom
         return { success: false, error: 'Failed to delete routing rule' }
     }
 }
+
+export async function toggleRoutingRule(ruleId: string, enabled: boolean, clientId?: string): Promise<{ success: boolean; error?: string }> {
+    try {
+        const { userData, supabaseServerClient, client } = await clientDashboardAuth(clientId)
+
+        const { error } = await supabaseServerClient
+            .from('agent_routing_rules')
+            .update({ enabled })
+            .eq('id', ruleId)
+            .eq('client_id', client.id)
+
+        if (error) {
+            console.error('Error toggling routing rule:', error)
+            return { success: false, error: 'Failed to update routing rule' }
+        }
+
+        // Revalidate the deployment page
+        revalidatePath(`/s/[orgId]/app/agents/[agentId]/deployment`)
+        
+        return { success: true }
+    } catch (error) {
+        console.error('Error in toggleRoutingRule:', error)
+        return { success: false, error: 'Failed to update routing rule' }
+    }
+}
