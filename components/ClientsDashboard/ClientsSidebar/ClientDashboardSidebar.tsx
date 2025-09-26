@@ -97,7 +97,7 @@ const navigationSections: NavigationSection[] = [
       },
       {
         title: "Phone Numbers",
-        description: "Inbound routing",
+        description: "Manage phone numbers",
         url: "/app/phone-numbers",
         icon: Hash,
       },
