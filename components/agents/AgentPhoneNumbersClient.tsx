@@ -109,7 +109,7 @@ export function AgentPhoneNumbersClient({
                                 Add Number
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-4xl">
+                        <DialogContent className="max-w-none max-h-[80vh] overflow-y-auto w-fit min-w-[600px] max-w-[90vw]">
                             <DialogHeader>
                                 <DialogTitle>Available Phone Numbers</DialogTitle>
                                 <DialogDescription>
@@ -130,25 +130,25 @@ export function AgentPhoneNumbersClient({
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
-                                                <TableHead>Phone Number</TableHead>
-                                                <TableHead>Account SID</TableHead>
-                                                <TableHead>Import Date</TableHead>
-                                                <TableHead className="w-[120px]">Actions</TableHead>
+                                                <TableHead className="w-auto">Phone Number</TableHead>
+                                                <TableHead className="w-auto">Account SID</TableHead>
+                                                <TableHead className="w-auto">Import Date</TableHead>
+                                                <TableHead className="w-auto text-right">Actions</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
                                             {localAvailableNumbers.map((number) => (
                                                 <TableRow key={number.id}>
-                                                    <TableCell className="font-medium">
+                                                    <TableCell className="font-medium whitespace-nowrap">
                                                         {number.phone_number}
                                                     </TableCell>
-                                                    <TableCell className="font-mono text-sm">
+                                                    <TableCell className="font-mono text-sm whitespace-nowrap">
                                                         {number.twilio_account_sid ? 
                                                             `${number.twilio_account_sid.substring(0, 10)}...` : 
                                                             'N/A'
                                                         }
                                                     </TableCell>
-                                                    <TableCell className="text-muted-foreground">
+                                                    <TableCell className="text-muted-foreground whitespace-nowrap">
                                                         {new Date(number.created_at).toLocaleDateString('en-US', {
                                                             year: 'numeric',
                                                             month: 'short',
@@ -157,12 +157,13 @@ export function AgentPhoneNumbersClient({
                                                             minute: '2-digit'
                                                         })}
                                                     </TableCell>
-                                                    <TableCell>
+                                                    <TableCell className="text-right">
                                                         <Button
                                                             onClick={() => handleAssign(number.id, number.phone_number)}
                                                             disabled={isAssigning === number.id}
                                                             size="sm"
                                                             variant="outline"
+                                                            className="whitespace-nowrap"
                                                         >
                                                             {isAssigning === number.id ? (
                                                                 <>
@@ -199,31 +200,31 @@ export function AgentPhoneNumbersClient({
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Phone Number</TableHead>
-                                    <TableHead>Account SID</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead>Assigned Date</TableHead>
-                                    <TableHead className="w-[120px]">Actions</TableHead>
+                                    <TableHead className="w-auto">Phone Number</TableHead>
+                                    <TableHead className="w-auto">Account SID</TableHead>
+                                    <TableHead className="w-auto">Status</TableHead>
+                                    <TableHead className="w-auto">Assigned Date</TableHead>
+                                    <TableHead className="w-auto text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {localAssignedNumbers.map((number) => (
                                     <TableRow key={number.id}>
-                                        <TableCell className="font-medium">
+                                        <TableCell className="font-medium whitespace-nowrap">
                                             {number.phone_number}
                                         </TableCell>
-                                        <TableCell className="font-mono text-sm">
+                                        <TableCell className="font-mono text-sm whitespace-nowrap">
                                             {number.twilio_account_sid ? 
                                                 `${number.twilio_account_sid.substring(0, 10)}...` : 
                                                 'N/A'
                                             }
                                         </TableCell>
                                         <TableCell>
-                                            <Badge variant="default" className="bg-green-100 text-green-800">
+                                            <Badge variant="default" className="bg-green-100 text-green-800 whitespace-nowrap">
                                                 Connected
                                             </Badge>
                                         </TableCell>
-                                        <TableCell className="text-muted-foreground">
+                                        <TableCell className="text-muted-foreground whitespace-nowrap">
                                             {new Date(number.created_at).toLocaleDateString('en-US', {
                                                 year: 'numeric',
                                                 month: 'short',
@@ -232,12 +233,13 @@ export function AgentPhoneNumbersClient({
                                                 minute: '2-digit'
                                             })}
                                         </TableCell>
-                                        <TableCell>
+                                        <TableCell className="text-right">
                                             <Button
                                                 onClick={() => handleUnassign(number.id, number.phone_number)}
                                                 disabled={isUnassigning === number.id}
                                                 size="sm"
                                                 variant="outline"
+                                                className="whitespace-nowrap"
                                             >
                                                 {isUnassigning === number.id ? (
                                                     <>
