@@ -41,8 +41,8 @@ export function AgentToolsClient({ agentId, initialTools }: AgentToolsClientProp
                 description: "The new tool has been added to your agent."
             })
             
-            // Switch to edit mode for the new tool
-            navigateToEditAfterCreate(newTool as VapiTool)
+            // Navigate back to the overview table
+            navigateToList()
             
         } catch (error) {
             console.error('Error creating tool:', error)
@@ -56,7 +56,12 @@ export function AgentToolsClient({ agentId, initialTools }: AgentToolsClientProp
 
     const handleSave = async (toolData: any) => {
         // This will be handled by the ToolCell component
-        // We might want to refresh the tools list here if needed
+        // No need to show toast here as individual tool components handle it
+    }
+
+    const handleSaveSuccess = () => {
+        // Navigate back to the overview after successful save
+        navigateToList()
     }
 
     // Render the appropriate view
@@ -88,6 +93,7 @@ export function AgentToolsClient({ agentId, initialTools }: AgentToolsClientProp
                 tool={selectedTool}
                 onBack={navigateToList}
                 onSave={handleSave}
+                onSaveSuccess={handleSaveSuccess}
             />
         )
     }

@@ -9,9 +9,10 @@ interface ToolEditViewProps {
     tool: VapiTool
     onBack: () => void
     onSave: (toolData: any) => void
+    onSaveSuccess?: () => void
 }
 
-export function ToolEditView({ tool, onBack, onSave }: ToolEditViewProps) {
+export function ToolEditView({ tool, onBack, onSave, onSaveSuccess }: ToolEditViewProps) {
     const getToolTypeDisplayName = (type: string) => {
         switch (type) {
             case 'transferCall':
@@ -45,7 +46,7 @@ export function ToolEditView({ tool, onBack, onSave }: ToolEditViewProps) {
                 </div>
             </div>
 
-            <ToolCell tool={tool} onSave={onSave} />
+            <ToolCell tool={tool} onSave={onSave} onSaveSuccess={onSaveSuccess} />
         </div>
     )
 }

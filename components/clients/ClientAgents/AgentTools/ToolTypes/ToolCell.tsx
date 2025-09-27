@@ -16,20 +16,28 @@ interface ToolCellProps {
   tool: VapiTool
   isCreateMode?: boolean
   onSave: (toolData: UpdateVapiToolDto) => void
+  onSaveSuccess?: () => void
 }
 
-export function ToolCell({ tool, isCreateMode = false, onSave }: ToolCellProps) {
+export function ToolCell({ tool, isCreateMode = false, onSave, onSaveSuccess }: ToolCellProps) {
 
     const [isEditing, setIsEditing] = useState(false)
 
     const handleSave = async (toolData: UpdateVapiToolDto) => {
         console.log('handleSave with data', toolData)
-        if (!isCreateMode) {
-            await updateTool(tool.id, toolData)
+        try {
+            if (!isCreateMode) {
+                await updateTool(tool.id, toolData)
+            }
+            // Always call the parent's onSave callback
+            await onSave(toolData)
+            setIsEditing(false)
+            // Call success callback if provided
+            onSaveSuccess?.()
+        } catch (error) {
+            // Error handling is done by individual tool components
+            throw error
         }
-        // Always call the parent's onSave callback
-        await onSave(toolData)
-        setIsEditing(false)
     }
 
     switch (tool.type) {
