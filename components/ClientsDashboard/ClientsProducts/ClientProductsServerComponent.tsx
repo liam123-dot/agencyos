@@ -11,6 +11,22 @@ import { getClientSubscriptions } from "@/app/api/clients/clientSubscriptions"
 import { Subscription } from "@/app/api/clients/subscriptionType"
 import ManageBillingButton from "./ManageBillingButton"
 
+// Helper function to determine grid classes based on product count
+function getGridClasses(productCount: number): string {
+    if (productCount === 1) {
+        return "grid-cols-1 max-w-md mx-auto"
+    } else if (productCount === 2) {
+        return "grid-cols-1 md:grid-cols-2 max-w-4xl mx-auto"
+    } else if (productCount === 3) {
+        return "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 max-w-6xl mx-auto"
+    } else if (productCount === 4) {
+        return "grid-cols-1 md:grid-cols-2 lg:grid-cols-4 max-w-7xl mx-auto"
+    } else {
+        // For 5+ products, use responsive grid that adapts well
+        return "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
+    }
+}
+
 export async function ClientProductsServerComponent({ clientId }: { clientId?: string }) {
     
     const { userData } = await getUser()
@@ -26,64 +42,168 @@ export async function ClientProductsServerComponent({ clientId }: { clientId?: s
     const products = await getClientProducts(clientId)
     const subscription = await getClientSubscriptions(clientId)
 
+    // Sort products by base price (monthly equivalent), then by per-minute price
+    const sortedProducts = products.sort((a, b) => {
+        // First sort by base price
+        if (a.base_price_cents !== b.base_price_cents) {
+            return a.base_price_cents - b.base_price_cents
+        }
+        // Then by per-minute price
+        return a.price_per_minute_cents - b.price_per_minute_cents
+    })
+
     return (
-        <div className="space-y-6">
-            <div className="flex items-start justify-between">
-                <div className="space-y-2">
-                    <h1 className="text-3xl font-bold tracking-tight">Your Plans & Services</h1>
-                    <p className="text-muted-foreground">
-                        Manage your subscription and explore our available plans and services.
-                    </p>
-                </div>
-                {subscription && (
-                    <div className="flex-shrink-0">
-                        <ManageBillingButton />
-                    </div>
-                )}
-            </div>
-            
-            {products.length > 0 ? (
-                <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {products.map((product) => (
-                            <ProductCard 
-                                key={product.id} 
-                                product={product} 
-                                subscription={subscription}
-                            />
-                        ))}
-                    </div>
-                </>
-            ) : (
-                <Card className="text-center py-12">
-                    <CardContent>
-                        <div className="flex flex-col items-center gap-4">
-                            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
-                                <svg
-                                    className="w-8 h-8 text-muted-foreground"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-                                    />
-                                </svg>
+        <div className="container mx-auto px-4 max-w-7xl">
+                {/* Header Section */}
+                <div className="mb-4">
+                    <div className="flex items-start justify-between mb-6">
+                        <div className="space-y-3">
+                            <h1 className="text-4xl font-bold tracking-tight">
+                                Your Plans & Services
+                            </h1>
+                            <p className="text-lg text-muted-foreground max-w-2xl">
+                                Manage your subscription and explore our available plans and services.
+                            </p>
+                        </div>
+                        {subscription && (
+                            <div className="flex-shrink-0">
+                                <ManageBillingButton />
                             </div>
-                            <div className="space-y-2">
-                                <h3 className="text-lg font-semibold">No products available</h3>
-                                <p className="text-muted-foreground">
-                                    There are currently no products available. Please check back later.
-                                </p>
+                        )}
+                    </div>
+                    
+                    {/* Current Plan Details */}
+                    {subscription ? (
+                        <CurrentPlanCard subscription={subscription} sortedProducts={sortedProducts} />
+                    ) : null}
+                </div>
+            
+                {/* Products Grid - Only show if no subscription */}
+                {!subscription && products.length > 0 ? (
+                    <div className="space-y-6">
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-2xl font-semibold">Available Plans</h2>
+                            <div className="text-sm text-muted-foreground">
+                                {products.length} plan{products.length !== 1 ? 's' : ''} available
                             </div>
                         </div>
-                    </CardContent>
-                </Card>
-            )}
+                        <div className={`grid gap-8 ${getGridClasses(sortedProducts.length)}`}>
+                            {sortedProducts.map((product) => (
+                                <ProductCard 
+                                    key={product.id} 
+                                    product={product} 
+                                    subscription={subscription}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                ) : !subscription ? (
+                    <div className="flex items-center justify-center min-h-[400px]">
+                        <Card className="max-w-md w-full text-center py-16 px-8 shadow-lg">
+                            <CardContent>
+                                <div className="flex flex-col items-center gap-6">
+                                    <div className="w-20 h-20 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full flex items-center justify-center">
+                                        <svg
+                                            className="w-10 h-10 text-primary"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={1.5}
+                                                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                                            />
+                                        </svg>
+                                    </div>
+                                    <div className="space-y-3">
+                                        <h3 className="text-xl font-semibold">No Plans Available</h3>
+                                        <p className="text-muted-foreground leading-relaxed">
+                                            We're currently setting up your available plans. Please check back soon or contact support if you need assistance.
+                                        </p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                ) : null}
         </div>
+    )
+}
+
+function CurrentPlanCard({ subscription, sortedProducts }: { subscription: Subscription; sortedProducts: Product[] }) {
+    // Find the current product details
+    const currentProduct = sortedProducts.find(product => product.stripe_base_price_id === subscription.base_price_id)
+    
+    const formatCurrency = (cents: number, currency: string) => {
+        const amount = cents / 100
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: currency,
+        }).format(amount)
+    }
+
+    return (
+        <Card className="shadow-sm">
+            <CardHeader className="pb-4">
+                <div className="flex items-start justify-between">
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-3">
+                            <CardTitle className="text-xl">
+                                Active Subscription
+                            </CardTitle>
+                            <Badge variant="secondary">
+                                Current Plan
+                            </Badge>
+                        </div>
+                        <CardDescription>
+                            Next billing: {subscription.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString() : 'Not available'}
+                        </CardDescription>
+                    </div>
+                </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Plan Name */}
+                    <div className="space-y-2">
+                        <h3 className="text-sm font-medium text-muted-foreground">Plan</h3>
+                        <div className="text-2xl font-bold">
+                            {currentProduct?.name || 'Current Plan'}
+                        </div>
+                    </div>
+                    
+                    {/* Monthly Price */}
+                    <div className="space-y-2">
+                        <h3 className="text-sm font-medium text-muted-foreground">Monthly Price</h3>
+                        <div className="text-2xl font-bold text-primary">
+                            {formatCurrency(subscription.base_amount_cents, 'GBP')}
+                        </div>
+                    </div>
+                    
+                    {/* Included Minutes & Per-Minute Price */}
+                    <div className="space-y-2">
+                        <h3 className="text-sm font-medium text-muted-foreground">Included Minutes</h3>
+                        <div className="space-y-1">
+                            <div className="text-2xl font-bold">
+                                {subscription.minutes_included} min
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                                {formatCurrency(subscription.per_second_price_cents * 60, 'GBP')} per extra minute
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                {currentProduct?.description && (
+                    <div className="pt-4 border-t">
+                        <p className="text-sm text-muted-foreground">
+                            {currentProduct.description}
+                        </p>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
     )
 }
 
@@ -101,58 +221,76 @@ function ProductCard({ product, subscription }: { product: Product; subscription
     const hasActiveSubscription = subscription !== null
 
     return (
-        <Card className={`h-full flex flex-col hover:shadow-lg transition-shadow duration-200 ${
-            hasActiveSubscription && !isCurrentPlan ? 'opacity-60' : ''
+        <Card className={`h-full flex flex-col transition-all duration-300 backdrop-blur-sm ${
+            isCurrentPlan 
+                ? 'border-2 border-green-600 shadow-lg bg-card/95' 
+                : hasActiveSubscription 
+                    ? 'opacity-70 hover:opacity-90 bg-card/80' 
+                    : 'hover:shadow-xl hover:scale-[1.02] bg-card/90 border-border/50'
         }`}>
-            <CardHeader className="pb-4">
-                <div className="flex items-start justify-between">
-                    <div className="space-y-1 flex-1">
-                        <div className="flex items-center gap-2">
-                            <CardTitle className="text-xl">{product.name}</CardTitle>
-                            {isCurrentPlan && (
-                                <Badge variant="default" className="bg-green-600 hover:bg-green-700">
-                                    Current Plan
-                                </Badge>
-                            )}
-                        </div>
-                        <Badge variant="outline" className="w-fit">
-                            {product.currency}
+            <CardHeader className="pb-6 relative">
+                {isCurrentPlan && (
+                    <div className="absolute -top-3 -right-3 z-10">
+                        <Badge variant="default" className="bg-green-600 hover:bg-green-700 shadow-md px-3 py-1">
+                            ✓ Current Plan
                         </Badge>
                     </div>
-                </div>
-                {product.description && (
-                    <CardDescription className="text-sm leading-relaxed">
-                        {product.description}
-                    </CardDescription>
                 )}
+                <div className="space-y-4">
+                    <div className="flex items-start justify-between">
+                        <div className="space-y-3 flex-1">
+                            <CardTitle className="text-2xl font-bold">
+                                {product.name}
+                            </CardTitle>
+                            <Badge variant="outline" className="w-fit text-xs font-medium px-2 py-1">
+                                {product.currency.toUpperCase()}
+                            </Badge>
+                        </div>
+                    </div>
+                    {product.description && (
+                        <CardDescription className="text-sm leading-relaxed text-muted-foreground/90">
+                            {product.description}
+                        </CardDescription>
+                    )}
+                </div>
             </CardHeader>
             
-            <CardContent className="flex-1 flex flex-col justify-between space-y-4">
-                <div className="space-y-3">
-                    <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                            <span className="text-sm font-medium text-muted-foreground">Monthly Base</span>
-                            <span className="text-lg font-bold">
+            <CardContent className="flex-1 flex flex-col justify-between space-y-6 px-6 pb-6">
+                <div className="space-y-6">
+                    {/* Main pricing display */}
+                    <div className="text-center space-y-2 py-4">
+                        <div className="text-4xl font-bold text-primary">
+                            {formatCurrency(product.base_price_cents, product.currency)}
+                        </div>
+                        <div className="text-sm font-medium text-muted-foreground">per {product.billing_interval}</div>
+                    </div>
+                    
+                    {/* Pricing breakdown */}
+                    <div className="space-y-1 bg-muted/30 rounded-lg p-4">
+                        <div className="flex justify-between items-center py-2">
+                            <span className="text-sm font-medium text-muted-foreground">Base {product.billing_interval.charAt(0).toUpperCase() + product.billing_interval.slice(1)}ly</span>
+                            <span className="text-sm font-bold">
                                 {formatCurrency(product.base_price_cents, product.currency)}
                             </span>
                         </div>
                         
-                        <div className="flex justify-between items-center">
+                        <div className="flex justify-between items-center py-2 border-t border-border/30">
                             <span className="text-sm font-medium text-muted-foreground">Per Minute</span>
-                            <span className="text-sm font-semibold">
+                            <span className="text-sm font-bold">
                                 {formatCurrency(product.price_per_minute_cents, product.currency)}
                             </span>
                         </div>
                     </div>
                     
-                    <div className="bg-muted/50 rounded-lg p-3">
-                        <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium">Included Minutes</span>
-                            <Badge variant="secondary" className="font-semibold">
+                    {/* Included minutes highlight */}
+                    <div className="bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-semibold text-foreground">Included Minutes</span>
+                            <Badge variant="secondary" className="font-bold bg-primary/20 text-primary border-primary/30">
                                 {product.minutes_included} min
                             </Badge>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p className="text-xs text-muted-foreground">
                             Additional usage charged per minute
                         </p>
                     </div>
@@ -160,8 +298,10 @@ function ProductCard({ product, subscription }: { product: Product; subscription
                 
                 <SelectProductButton 
                     product={product} 
-                    isDisabled={hasActiveSubscription && !isCurrentPlan}
+                    isDisabled={false}
                     isCurrentPlan={isCurrentPlan || false}
+                    hasActiveSubscription={hasActiveSubscription}
+                    currentProductPrice={subscription?.base_amount_cents || 0}
                 />
             </CardContent>
         </Card>

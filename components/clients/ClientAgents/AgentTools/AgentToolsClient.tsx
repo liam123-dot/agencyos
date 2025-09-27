@@ -2,12 +2,13 @@
 
 import { useState } from "react"
 import { VapiTool, CreateVapiToolDto } from "@/app/api/agents/tools/ToolTypes"
-import { createTool } from "@/app/api/agents/tools/actions"
+import { createTool, deleteTool } from "@/app/api/agents/tools/actions"
 import { toast } from "sonner"
 import { useToolsNavigation } from "./hooks/useToolsNavigation"
 import { ToolsListView } from "./views/ToolsListView"
 import { ToolCreateView } from "./views/ToolCreateView"
 import { ToolEditView } from "./views/ToolEditView"
+import { DeleteToolConfirmationModal } from "./components/DeleteToolConfirmationModal"
 
 interface AgentToolsClientProps {
     agentId: string
@@ -17,6 +18,8 @@ interface AgentToolsClientProps {
 export function AgentToolsClient({ agentId, initialTools }: AgentToolsClientProps) {
     const [tools, setTools] = useState<VapiTool[]>(initialTools)
     const [isCreating, setIsCreating] = useState(false)
+    const [toolToDelete, setToolToDelete] = useState<VapiTool | null>(null)
+    const [isDeleting, setIsDeleting] = useState(false)
     
     const {
         selectedTool,
@@ -64,14 +67,56 @@ export function AgentToolsClient({ agentId, initialTools }: AgentToolsClientProp
         navigateToList()
     }
 
+    const handleDeleteTool = (tool: VapiTool) => {
+        setToolToDelete(tool)
+    }
+
+    const handleConfirmDelete = async (toolId: string) => {
+        try {
+            setIsDeleting(true)
+            await deleteTool(agentId, toolId)
+            
+            // Remove the tool from the local state
+            setTools(prevTools => prevTools.filter(tool => tool.id !== toolId))
+            
+            toast.success("Tool deleted successfully!", {
+                description: "The tool has been removed from your agent."
+            })
+            
+            setToolToDelete(null)
+            
+        } catch (error) {
+            console.error('Error deleting tool:', error)
+            toast.error("Failed to delete tool", {
+                description: "Please try again or contact support if the issue persists."
+            })
+        } finally {
+            setIsDeleting(false)
+        }
+    }
+
+    const handleCancelDelete = () => {
+        setToolToDelete(null)
+    }
+
     // Render the appropriate view
     if (viewMode === 'list') {
         return (
-            <ToolsListView
-                tools={tools}
-                onCreateTool={() => navigateToCreate()}
-                onSelectTool={navigateToEdit}
-            />
+            <>
+                <ToolsListView
+                    tools={tools}
+                    onCreateTool={() => navigateToCreate()}
+                    onSelectTool={navigateToEdit}
+                    onDeleteTool={handleDeleteTool}
+                />
+                <DeleteToolConfirmationModal
+                    tool={toolToDelete}
+                    isOpen={!!toolToDelete}
+                    onClose={handleCancelDelete}
+                    onConfirm={handleConfirmDelete}
+                    isDeleting={isDeleting}
+                />
+            </>
         )
     }
 

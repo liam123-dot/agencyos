@@ -7,16 +7,17 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, ChevronRight } from "lucide-react"
+import { Plus, ChevronRight, Trash2 } from "lucide-react"
 import { ToolType } from "../hooks/useToolsNavigation"
 
 interface ToolsListViewProps {
     tools: VapiTool[]
     onCreateTool: () => void
     onSelectTool: (tool: VapiTool) => void
+    onDeleteTool: (tool: VapiTool) => void
 }
 
-export function ToolsListView({ tools, onCreateTool, onSelectTool }: ToolsListViewProps) {
+export function ToolsListView({ tools, onCreateTool, onSelectTool, onDeleteTool }: ToolsListViewProps) {
     const [searchQuery, setSearchQuery] = useState("")
     const [typeFilter, setTypeFilter] = useState<"all" | ToolType>("all")
 
@@ -155,7 +156,7 @@ export function ToolsListView({ tools, onCreateTool, onSelectTool }: ToolsListVi
                                     <TableHead>Tool</TableHead>
                                     <TableHead>Type</TableHead>
                                     <TableHead>Configuration</TableHead>
-                                    <TableHead className="w-12"></TableHead>
+                                    <TableHead className="w-24">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -194,12 +195,58 @@ export function ToolsListView({ tools, onCreateTool, onSelectTool }: ToolsListVi
                                                     <span>From {(tool as any).metadata?.from || 'No number'}</span>
                                                 )}
                                                 {tool.type === 'transferCall' && (
-                                                    <span>To {(tool as any).destinations?.[0]?.number || 'No number'}</span>
+                                                    <div className="space-y-1">
+                                                        {(tool as any).destinations && (tool as any).destinations.length > 0 ? (
+                                                            (tool as any).destinations.length === 1 ? (
+                                                                <span>To {(tool as any).destinations[0]?.number || 'No number'}</span>
+                                                            ) : (
+                                                                <div>
+                                                                    <span className="font-medium">{(tool as any).destinations.length} destinations:</span>
+                                                                    <div className="mt-1 space-y-0.5">
+                                                                        {(tool as any).destinations.slice(0, 3).map((dest: any, index: number) => (
+                                                                            <div key={index} className="flex items-center gap-2">
+                                                                                <span className="w-1 h-1 bg-muted-foreground rounded-full"></span>
+                                                                                <span>{dest.number || 'No number'}</span>
+                                                                                {dest.transferPlan?.mode && (
+                                                                                    <Badge variant="outline" className="text-xs px-1 py-0">
+                                                                                        {dest.transferPlan.mode === 'blind-transfer' && 'Blind'}
+                                                                                        {dest.transferPlan.mode === 'cold-transfer' && 'Cold'}
+                                                                                        {dest.transferPlan.mode === 'warm-transfer-say-message' && 'Warm'}
+                                                                                        {dest.transferPlan.mode === 'warm-transfer-say-summary' && 'Smart'}
+                                                                                    </Badge>
+                                                                                )}
+                                                                            </div>
+                                                                        ))}
+                                                                        {(tool as any).destinations.length > 3 && (
+                                                                            <div className="text-xs text-muted-foreground">
+                                                                                +{(tool as any).destinations.length - 3} more...
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            )
+                                                        ) : (
+                                                            <span>No destinations</span>
+                                                        )}
+                                                    </div>
                                                 )}
                                             </div>
                                         </TableCell>
                                         <TableCell className="py-3">
-                                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                            <div className="flex items-center gap-1">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        onDeleteTool(tool)
+                                                    }}
+                                                    className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 ))}

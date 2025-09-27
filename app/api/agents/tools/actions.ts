@@ -64,3 +64,46 @@ export async function createTool(agentId: string, toolData: CreateVapiToolDto) {
     
     return tool
 }
+
+export async function deleteTool(agentId: string, toolId: string) {
+    const { userData, supabaseServerClient } = await getUser()
+    const client_id = userData.client_id;
+
+    // Get client and organization data
+    const {data: client, error: clientError} = await supabaseServerClient.from('clients').select('*').eq('id', client_id).single()
+    if (clientError) throw new Error('Failed to fetch client data')
+
+    const {data: organization, error: organizationError} = await supabaseServerClient.from('organizations').select('*').eq('id', client.organization_id).single()    
+    if (organizationError) throw new Error('Failed to fetch organization data')
+
+    // Get the agent to access the assistant
+    const {data: agent, error: agentError} = await supabaseServerClient.from('agents').select('*').eq('id', agentId).single()
+    if (agentError) throw new Error('Failed to fetch agent data')
+
+    const vapiClient = new VapiClient({token: organization.vapi_api_key})
+
+    console.log('deleteTool with id', toolId)
+
+    // Get the current assistant to update its toolIds
+    const assistant = await vapiClient.assistants.get(agent.platform_id)
+    const currentToolIds = assistant.model?.toolIds || []
+    
+    // Remove the tool ID from the assistant
+    const updatedToolIds = currentToolIds.filter(id => id !== toolId)
+    
+    // Update the assistant without the tool
+    await vapiClient.assistants.update(agent.platform_id, {
+        model: {
+            ...assistant.model,
+            toolIds: updatedToolIds
+        } as any
+    })
+
+    console.log('Updated assistant - removed tool ID')
+
+    // Delete the tool from Vapi
+    await vapiClient.tools.delete(toolId)
+    console.log('Deleted tool from Vapi')
+    
+    return { success: true }
+}
