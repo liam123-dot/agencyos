@@ -18,16 +18,19 @@ export async function importPhoneNumber(
 
         const { supabaseServerClient, client } = authorized;
 
-        // Check if phone number already exists for this client
+        // Check if phone number already exists in our database
         const { data: existingNumber } = await supabaseServerClient
             .from("phone_numbers")
-            .select("id")
+            .select("id, client_id")
             .eq("phone_number", phoneNumber)
-            .eq("client_id", clientId)
             .single();
 
         if (existingNumber) {
-            return { success: false, error: "Phone number already imported" };
+            if (existingNumber.client_id === clientId) {
+                return { success: false, error: "Phone number already imported" };
+            } else {
+                return { success: false, error: "This phone number is already in use" };
+            }
         }
 
         // Get organization to access VAPI API key
@@ -41,23 +44,51 @@ export async function importPhoneNumber(
             throw new Error("Organization not found");
         }
 
-        // Create phone number in VAPI
+        // Check if phone number already exists in VAPI organization and get or create it
+        const vapiClient = new VapiClient({ token: org.vapi_api_key });
         let vapiPhoneNumber;
+        
         try {
-            const vapiClient = new VapiClient({ token: org.vapi_api_key });
-            
-            const createPayload = {
-                provider: "twilio" as const,
-                number: phoneNumber,
-                name: `${phoneNumber} - ${client.name || 'Client'}`,
-                twilioAccountSid: twilioAccountSid,
-                twilioAuthToken: twilioAuthToken
-            };
+            const existingVapiNumbers = await vapiClient.phoneNumbers.list();
+            const existingVapiNumber = existingVapiNumbers.find(
+                (num: any) => num.number === phoneNumber
+            );
 
-            vapiPhoneNumber = await vapiClient.phoneNumbers.create(createPayload);
+            if (existingVapiNumber) {
+                // Number exists in VAPI, use the existing one
+                vapiPhoneNumber = existingVapiNumber;
+            } else {
+                // Create phone number in VAPI
+                const createPayload = {
+                    provider: "twilio" as const,
+                    number: phoneNumber,
+                    name: `${phoneNumber} - ${client.name || 'Client'}`,
+                    twilioAccountSid: twilioAccountSid,
+                    twilioAuthToken: twilioAuthToken
+                };
+
+                vapiPhoneNumber = await vapiClient.phoneNumbers.create(createPayload);
+            }
         } catch (vapiError: any) {
-            console.error('Failed to create phone number in VAPI:', vapiError);
-            throw new Error(`Failed to create phone number in VAPI: ${vapiError.message}`);
+            console.error('Failed to handle phone number in VAPI:', vapiError);
+            
+            // Handle specific 400 error for existing phone numbers
+            if (vapiError.status === 400 || vapiError.statusCode === 400) {
+                const errorMessage = vapiError.message || vapiError.body?.message || '';
+                
+                // Check for various VAPI error patterns
+                if (errorMessage.includes('already in use by another org') || 
+                    errorMessage.includes('already in use by another user') ||
+                    errorMessage.includes('Existing Phone Number') || 
+                    errorMessage.includes('Identical')) {
+                    return {
+                        success: false,
+                        error: "This phone number is already in use by another VAPI user. Please try a different number."
+                    };
+                }
+            }
+            
+            throw new Error(`Failed to handle phone number in VAPI: ${vapiError.message || vapiError}`);
         }
 
         // Insert the phone number into our database with VAPI platform information

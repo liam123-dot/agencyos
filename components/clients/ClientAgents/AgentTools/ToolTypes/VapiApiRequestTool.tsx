@@ -12,6 +12,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useState } from "react"
 import { Loader2, Plus, X, Edit } from "lucide-react"
 import { toast } from "sonner"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 interface HeaderEntry {
     key: string
@@ -61,6 +64,31 @@ export function VapiApiRequestTool({ tool, onSave }: { tool: ApiRequestTool, onS
     const [isPropertyDialogOpen, setIsPropertyDialogOpen] = useState(false)
     
     const [saving, setSaving] = useState(false)
+
+    // Derived helpers & previews
+    const headerCount = headers.filter(h => h.key.trim() && h.value.trim()).length
+    const bodyPropCount = bodyProperties.filter(p => p.key.trim()).length
+
+    const previewHeadersObject = headers.reduce((acc, h) => {
+        if (h.key.trim() && h.value.trim()) acc[h.key] = h.value
+        return acc
+    }, {} as Record<string, string>)
+
+    const previewBodyObject = bodyProperties.reduce((acc, p) => {
+        if (!p.key.trim()) return acc
+        let example: any = p.defaultValue
+        if (!example || example === "") {
+            switch (p.type) {
+                case "number": example = 0; break
+                case "boolean": example = false; break
+                case "object": example = {}; break
+                case "array": example = []; break
+                default: example = "example"; break
+            }
+        }
+        acc[p.key] = example
+        return acc
+    }, {} as Record<string, any>)
 
     const addHeader = () => {
         setHeaders([...headers, { key: "", value: "" }])
@@ -402,12 +430,18 @@ export function VapiApiRequestTool({ tool, onSave }: { tool: ApiRequestTool, onS
     return (
         <Card className="w-full">
             <CardHeader>
-                <CardTitle>API Request Tool Configuration</CardTitle>
+                <CardTitle>API Request Tool</CardTitle>
                 <CardDescription>
-                    Configure your API request tool to make HTTP calls during conversations
+                    Make HTTP calls during conversations
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+                <Alert>
+                    <AlertDescription>
+                        Give the function a clear name and describe when the agent should call it.
+                    </AlertDescription>
+                </Alert>
+
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                         <Label htmlFor="function-name">Function Name</Label>
@@ -418,6 +452,7 @@ export function VapiApiRequestTool({ tool, onSave }: { tool: ApiRequestTool, onS
                             placeholder="Enter function name"
                             disabled={isFormDisabled}
                         />
+                        <p className="text-xs text-muted-foreground">Shown to the agent when selecting a tool.</p>
                     </div>
 
                     <div className="space-y-2">
@@ -429,6 +464,7 @@ export function VapiApiRequestTool({ tool, onSave }: { tool: ApiRequestTool, onS
                             placeholder="Enter tool name (e.g., getUserData)"
                             disabled={isFormDisabled}
                         />
+                        <p className="text-xs text-muted-foreground">A concise identifier used in logs and routing.</p>
                     </div>
                 </div>
 
@@ -442,6 +478,7 @@ export function VapiApiRequestTool({ tool, onSave }: { tool: ApiRequestTool, onS
                         disabled={isFormDisabled}
                         rows={2}
                     />
+                    <p className="text-xs text-muted-foreground">Explain the intent so the agent knows when to use it.</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -454,6 +491,7 @@ export function VapiApiRequestTool({ tool, onSave }: { tool: ApiRequestTool, onS
                             placeholder="https://api.example.com/endpoint"
                             disabled={isFormDisabled}
                         />
+                        <p className="text-xs text-muted-foreground">Use full URL including protocol. Supports environment-based URLs.</p>
                     </div>
 
                     <div className="space-y-2">
@@ -470,8 +508,11 @@ export function VapiApiRequestTool({ tool, onSave }: { tool: ApiRequestTool, onS
                                 <SelectItem value="DELETE">DELETE</SelectItem>
                             </SelectContent>
                         </Select>
+                        <p className="text-xs text-muted-foreground">Choose the HTTP verb that matches your endpoint.</p>
                     </div>
                 </div>
+
+                <Separator />
 
                 {/* Headers Section */}
                 <div className="space-y-3">
@@ -488,6 +529,7 @@ export function VapiApiRequestTool({ tool, onSave }: { tool: ApiRequestTool, onS
                             Add Header
                         </Button>
                     </div>
+                    <p className="text-xs text-muted-foreground">Add only the headers your API requires (e.g., Authorization).</p>
                     
                     {headers.map((header, index) => {
                         const error = getHeaderError(header)
@@ -526,6 +568,8 @@ export function VapiApiRequestTool({ tool, onSave }: { tool: ApiRequestTool, onS
                     })}
                 </div>
 
+                <Separator />
+
                 {/* Body Properties Section */}
                 <div className="space-y-3">
                     <div className="flex items-center justify-between">
@@ -541,6 +585,7 @@ export function VapiApiRequestTool({ tool, onSave }: { tool: ApiRequestTool, onS
                             Add Property
                         </Button>
                     </div>
+                    <p className="text-xs text-muted-foreground">Define the JSON fields your endpoint accepts. Mark required fields as needed.</p>
                     
                     {bodyProperties.length === 0 ? (
                         <p className="text-sm text-muted-foreground italic">No properties defined</p>
@@ -594,6 +639,25 @@ export function VapiApiRequestTool({ tool, onSave }: { tool: ApiRequestTool, onS
                             ))}
                         </div>
                     )}
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                    <Dialog>
+                        <DialogTrigger asChild>
+                            <Button type="button" variant="outline" className="w-full md:w-auto">Preview request payload</Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-2xl">
+                            <DialogHeader>
+                                <DialogTitle>Request preview</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-2">
+                                <div className="text-xs text-muted-foreground">This is an example of what will be sent.</div>
+                                <pre className="bg-muted p-3 rounded text-xs overflow-x-auto">
+{JSON.stringify({ method, url, headers: previewHeadersObject, body: previewBodyObject }, null, 2)}
+                                </pre>
+                            </div>
+                        </DialogContent>
+                    </Dialog>
                 </div>
 
                 <Button 

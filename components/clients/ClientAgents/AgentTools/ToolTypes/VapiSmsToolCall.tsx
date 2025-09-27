@@ -12,6 +12,9 @@ import { useSearchParams } from "next/navigation"
 import { getPhoneNumbers } from "@/app/api/phone-numbers/getPhoneNumbers"
 import { Loader2, AlertCircle } from "lucide-react"
 import { toast } from "sonner"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 interface PhoneNumber {
     id: string
@@ -116,9 +119,9 @@ export function VapiSmsToolCall({ tool, onSave }: { tool: SmsTool, onSave: (tool
     return (
         <Card className="w-full">
             <CardHeader>
-                <CardTitle>SMS Tool Configuration</CardTitle>
+                <CardTitle>SMS Tool</CardTitle>
                 <CardDescription>
-                    Configure your SMS tool to send text messages during calls
+                    Send text messages during calls
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -130,6 +133,12 @@ export function VapiSmsToolCall({ tool, onSave }: { tool: SmsTool, onSave: (tool
                     </div>
                 )}
 
+                <Alert>
+                    <AlertDescription>
+                        Choose the number you want to send texts from and give this tool a clear purpose.
+                    </AlertDescription>
+                </Alert>
+
                 <div className="space-y-2">
                     <Label htmlFor="tool-name">Tool Name</Label>
                     <Input
@@ -139,6 +148,7 @@ export function VapiSmsToolCall({ tool, onSave }: { tool: SmsTool, onSave: (tool
                         placeholder="Enter tool name (e.g., Send SMS)"
                         disabled={isFormDisabled}
                     />
+                    <p className="text-xs text-muted-foreground">Display name the agent will see.</p>
                 </div>
 
                 <div className="space-y-2">
@@ -150,6 +160,7 @@ export function VapiSmsToolCall({ tool, onSave }: { tool: SmsTool, onSave: (tool
                         placeholder="Describe what this tool does"
                         disabled={isFormDisabled}
                     />
+                    <p className="text-xs text-muted-foreground">Describe when to send a text and what to include.</p>
                 </div>
 
                 <div className="space-y-2">
@@ -160,18 +171,19 @@ export function VapiSmsToolCall({ tool, onSave }: { tool: SmsTool, onSave: (tool
                         </SelectTrigger>
                         <SelectContent>
                             {phoneNumbers.length === 0 ? (
-                                <SelectItem value="" disabled>
+                                <div className="p-2 text-sm text-muted-foreground">
                                     No phone numbers available
-                                </SelectItem>
+                                </div>
                             ) : (
-                                    phoneNumbers.map((phoneNumber) => (
-                                        <SelectItem key={phoneNumber.id} value={phoneNumber.phone_number}>
-                                            {phoneNumber.phone_number}
-                                        </SelectItem>
-                                    ))
+                                phoneNumbers.map((phoneNumber) => (
+                                    <SelectItem key={phoneNumber.id} value={phoneNumber.phone_number}>
+                                        {phoneNumber.phone_number}
+                                    </SelectItem>
+                                ))
                             )}
                         </SelectContent>
                     </Select>
+                    <p className="text-xs text-muted-foreground">Numbers come from your connected provider. Manage numbers in Settings.</p>
                 </div>
 
                 <Button 

@@ -12,6 +12,9 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { useState } from "react"
 import { Loader2, AlertCircle } from "lucide-react"
 import { toast } from "sonner"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 export function VapiTransferCallTool({ tool, onSave }: { tool: TransferCallTool, onSave: (toolData: UpdateVapiToolDto) => void }) {
     
@@ -105,12 +108,17 @@ export function VapiTransferCallTool({ tool, onSave }: { tool: TransferCallTool,
     return (
         <Card className="w-full">
             <CardHeader>
-                <CardTitle>Transfer Call Tool Configuration</CardTitle>
+                <CardTitle>Transfer Call Tool</CardTitle>
                 <CardDescription>
-                    Configure your transfer call tool to redirect calls to another number
+                    Redirect calls to another number
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+                <Alert>
+                    <AlertDescription>
+                        Set the destination number and what the caller hears before transfer. Choose warm transfer to introduce the call or cold transfer to connect immediately.
+                    </AlertDescription>
+                </Alert>
 
                 <div className="space-y-2">
                     <Label htmlFor="tool-name">Tool Name</Label>
@@ -133,6 +141,7 @@ export function VapiTransferCallTool({ tool, onSave }: { tool: TransferCallTool,
                         disabled={isFormDisabled}
                         rows={2}
                     />
+                    <p className="text-xs text-muted-foreground">Explain when the agent should transfer a caller.</p>
                 </div>
 
                 <div className="space-y-2">
@@ -144,6 +153,7 @@ export function VapiTransferCallTool({ tool, onSave }: { tool: TransferCallTool,
                         placeholder="Enter phone number to transfer to (e.g., +1234567890)"
                         disabled={isFormDisabled}
                     />
+                    <p className="text-xs text-muted-foreground">Use E.164 format for best compatibility.</p>
                 </div>
 
                 <div className="space-y-2">
@@ -155,6 +165,7 @@ export function VapiTransferCallTool({ tool, onSave }: { tool: TransferCallTool,
                         placeholder="Message to play before transferring (e.g., Please wait while I transfer you)"
                         disabled={isFormDisabled}
                     />
+                    <p className="text-xs text-muted-foreground">What the caller hears before the transfer begins.</p>
                 </div>
 
                 <div className="space-y-2">
@@ -169,18 +180,48 @@ export function VapiTransferCallTool({ tool, onSave }: { tool: TransferCallTool,
                     />
                 </div>
 
-                <div className="space-y-2">
-                    <Label htmlFor="transfer-mode">Transfer Mode</Label>
-                    <Select value={transferMode} onValueChange={(value) => setTransferMode(value as "warm-transfer-say-message" | "warm-transfer-say-summary" | "cold-transfer")} disabled={isFormDisabled}>
-                        <SelectTrigger>
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="warm-transfer-say-message">Warm Transfer (Say Message)</SelectItem>
-                            <SelectItem value="warm-transfer-say-summary">Warm Transfer (Say Summary)</SelectItem>
-                            <SelectItem value="cold-transfer">Cold Transfer</SelectItem>
-                        </SelectContent>
-                    </Select>
+                <div className="space-y-3">
+                    <Label>Transfer Mode</Label>
+                    <div className="grid grid-cols-1 gap-3">
+                        <div className={`border rounded-lg p-3 cursor-pointer transition-all ${transferMode === 'cold-transfer' ? 'border-primary bg-primary/5' : 'border-border hover:border-border/80'}`} 
+                             onClick={() => setTransferMode('cold-transfer')}>
+                            <div className="flex items-start gap-3">
+                                <div className={`w-4 h-4 rounded-full border-2 mt-0.5 ${transferMode === 'cold-transfer' ? 'border-primary bg-primary' : 'border-muted-foreground'}`}>
+                                    {transferMode === 'cold-transfer' && <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>}
+                                </div>
+                                <div>
+                                    <div className="font-medium text-sm">Instant Transfer</div>
+                                    <div className="text-xs text-muted-foreground">Connect immediately without introduction</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className={`border rounded-lg p-3 cursor-pointer transition-all ${transferMode === 'warm-transfer-say-message' ? 'border-primary bg-primary/5' : 'border-border hover:border-border/80'}`} 
+                             onClick={() => setTransferMode('warm-transfer-say-message')}>
+                            <div className="flex items-start gap-3">
+                                <div className={`w-4 h-4 rounded-full border-2 mt-0.5 ${transferMode === 'warm-transfer-say-message' ? 'border-primary bg-primary' : 'border-muted-foreground'}`}>
+                                    {transferMode === 'warm-transfer-say-message' && <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>}
+                                </div>
+                                <div>
+                                    <div className="font-medium text-sm">Warm Transfer</div>
+                                    <div className="text-xs text-muted-foreground">Introduce the caller with a custom message</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className={`border rounded-lg p-3 cursor-pointer transition-all ${transferMode === 'warm-transfer-say-summary' ? 'border-primary bg-primary/5' : 'border-border hover:border-border/80'}`} 
+                             onClick={() => setTransferMode('warm-transfer-say-summary')}>
+                            <div className="flex items-start gap-3">
+                                <div className={`w-4 h-4 rounded-full border-2 mt-0.5 ${transferMode === 'warm-transfer-say-summary' ? 'border-primary bg-primary' : 'border-muted-foreground'}`}>
+                                    {transferMode === 'warm-transfer-say-summary' && <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>}
+                                </div>
+                                <div>
+                                    <div className="font-medium text-sm">Smart Transfer</div>
+                                    <div className="text-xs text-muted-foreground">AI summarizes the conversation before transfer</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {transferMode === "warm-transfer-say-message" && (
@@ -193,6 +234,7 @@ export function VapiTransferCallTool({ tool, onSave }: { tool: TransferCallTool,
                             placeholder="Internal transfer message"
                             disabled={isFormDisabled}
                         />
+                        <p className="text-xs text-muted-foreground">A brief message to introduce the caller to the recipient.</p>
                     </div>
                 )}
 

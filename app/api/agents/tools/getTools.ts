@@ -26,7 +26,7 @@ export async function getTools(agentId: string) {
         return tool
     }) || [])
 
-    console.log(JSON.stringify(tools, null, 2))
+    // console.log(JSON.stringify(tools, null, 2))
 
     return tools as VapiTool[]
     
