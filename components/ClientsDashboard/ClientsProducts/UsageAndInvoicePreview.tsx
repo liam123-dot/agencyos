@@ -6,6 +6,8 @@ import { getClientSubscriptions } from "@/app/api/clients/clientSubscriptions"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { cn } from "@/lib/utils"
 import Stripe from "stripe"
 
 export default async function UsageAndInvoicePreview({ clientId }: { clientId?: string }) {
@@ -148,6 +150,71 @@ async function getInvoicePreview(stripe: Stripe, subscription: any, usageData: a
     }
 }
 
+function DualProgressBar({ 
+    includedUsed, 
+    overageUsed, 
+    includedTotal, 
+    className 
+}: { 
+    includedUsed: number
+    overageUsed: number
+    includedTotal: number
+    className?: string 
+}) {
+    const totalUsed = includedUsed + overageUsed
+    const maxValue = Math.max(includedTotal, totalUsed)
+    
+    // Calculate percentages for display
+    const includedPercentage = maxValue > 0 ? (Math.min(includedUsed, includedTotal) / maxValue) * 100 : 0
+    const overagePercentage = maxValue > 0 ? (overageUsed / maxValue) * 100 : 0
+    
+    // Generate tooltip messages
+    const includedTooltip = includedUsed >= includedTotal 
+        ? `All ${includedTotal} included minutes used`
+        : `${includedUsed.toFixed(1)} of ${includedTotal} included minutes used`
+    
+    const overageTooltip = `${overageUsed.toFixed(1)} minutes over included limit`
+    
+    return (
+        <TooltipProvider>
+            <div className={cn("bg-primary/20 relative h-3 w-full overflow-hidden rounded-full", className)}>
+                {/* Included usage bar (first part) - Green */}
+                {includedPercentage > 0 && (
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <div
+                                className="bg-green-500 h-full absolute left-0 top-0 transition-all cursor-pointer"
+                                style={{ width: `${includedPercentage}%` }}
+                            />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>{includedTooltip}</p>
+                        </TooltipContent>
+                    </Tooltip>
+                )}
+                
+                {/* Overage usage bar (second part) - Blue */}
+                {overagePercentage > 0 && (
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <div
+                                className="bg-blue-500 h-full absolute top-0 transition-all cursor-pointer"
+                                style={{ 
+                                    left: `${includedPercentage}%`,
+                                    width: `${overagePercentage}%` 
+                                }}
+                            />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>{overageTooltip}</p>
+                        </TooltipContent>
+                    </Tooltip>
+                )}
+            </div>
+        </TooltipProvider>
+    )
+}
+
 function UsageCard({ subscription, usageData }: { subscription: any, usageData: any }) {
     const includedMinutes = subscription.minutes_included || 0
     const usedMinutes = usageData.totalMinutes
@@ -179,7 +246,7 @@ function UsageCard({ subscription, usageData }: { subscription: any, usageData: 
                     <div className="text-right">
                         <div className="text-sm font-medium">{includedMinutes} included</div>
                         {overageMinutes > 0 && (
-                            <div className="text-xs text-destructive font-medium">
+                            <div className="text-xs text-blue-600 font-medium">
                                 +{overageMinutes.toFixed(1)} overage
                             </div>
                         )}
@@ -188,21 +255,32 @@ function UsageCard({ subscription, usageData }: { subscription: any, usageData: 
 
                 {/* Progress Bar */}
                 <div className="space-y-2">
-                    <Progress value={usagePercentage} className="h-3" />
+                    <DualProgressBar
+                        includedUsed={Math.min(usedMinutes, includedMinutes)}
+                        overageUsed={overageMinutes}
+                        includedTotal={includedMinutes}
+                    />
                     <div className="flex justify-between text-xs text-muted-foreground">
                         <span>0 min</span>
-                        <span>{includedMinutes} min included</span>
+                        <span className="text-center">
+                            {includedMinutes} min included
+                        </span>
+                        {overageMinutes > 0 && (
+                            <span className="text-blue-600 font-medium">
+                                {usedMinutes.toFixed(1)} total
+                            </span>
+                        )}
                     </div>
                 </div>
 
                 {/* Overage Alert */}
                 {overageMinutes > 0 && (
-                    <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                         <div className="flex justify-between items-center">
-                            <span className="text-sm font-medium text-destructive">
-                                Overage Charges
+                            <span className="text-sm font-medium text-blue-700">
+                                Additional Usage Charges
                             </span>
-                            <span className="font-bold text-destructive">
+                            <span className="font-bold text-blue-700">
                                 {formatCurrency(overageMinutes * (subscription.per_second_price_cents * 60) / 100, subscription.currency)}
                             </span>
                         </div>
@@ -258,7 +336,7 @@ function InvoicePreviewCard({ subscription, invoicePreview }: { subscription: an
                                     {invoicePreview.overageMinutes.toFixed(1)} extra minutes
                                 </div>
                             </div>
-                            <span className="font-medium text-destructive">
+                            <span className="font-medium text-blue-600">
                                 +{formatCurrency(invoicePreview.usageAmount, invoicePreview.currency)}
                             </span>
                         </div>
