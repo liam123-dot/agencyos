@@ -30,6 +30,248 @@ interface BodyProperty {
     required: boolean
 }
 
+const PropertyCard = ({ property, isNew, onSave, onCancel, updateProperty }: {
+    property: BodyProperty
+    isNew: boolean
+    onSave: () => void
+    onCancel: () => void
+    updateProperty: (prop: BodyProperty) => void
+}) => {
+    const addEnumValue = () => {
+        updateProperty({
+            ...property,
+            enumValues: [...property.enumValues, ""]
+        })
+    }
+
+    const updateEnumValue = (enumIndex: number, value: string) => {
+        const newEnumValues = [...property.enumValues]
+        newEnumValues[enumIndex] = value
+        updateProperty({
+            ...property,
+            enumValues: newEnumValues
+        })
+    }
+
+    const removeEnumValue = (enumIndex: number) => {
+        updateProperty({
+            ...property,
+            enumValues: property.enumValues.filter((_, i) => i !== enumIndex)
+        })
+    }
+
+    return (
+        <Card className="border-2 border-teal-200 bg-teal-50/50">
+            <CardContent className="p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                    <h4 className="font-medium">{isNew ? 'Add New Property' : 'Edit Property'}</h4>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={onCancel}
+                    >
+                        <X className="h-4 w-4" />
+                    </Button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Property Name */}
+                    <div className="space-y-2">
+                        <Label>Name</Label>
+                        <Input
+                            placeholder="Property key"
+                            value={property.key}
+                            onChange={(e) => updateProperty({...property, key: e.target.value})}
+                        />
+                    </div>
+
+                    {/* Property Type */}
+                    <div className="space-y-2">
+                        <Label>Type</Label>
+                        <Select
+                            value={property.type}
+                            onValueChange={(value) => updateProperty({...property, type: value})}
+                        >
+                            <SelectTrigger>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="string">string</SelectItem>
+                                <SelectItem value="number">number</SelectItem>
+                                <SelectItem value="boolean">boolean</SelectItem>
+                                <SelectItem value="object">object</SelectItem>
+                                <SelectItem value="array">array</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+
+                {/* Description */}
+                <div className="space-y-2">
+                    <Label>Description</Label>
+                    <Textarea
+                        placeholder="Property description (optional)"
+                        value={property.description}
+                        onChange={(e) => updateProperty({...property, description: e.target.value})}
+                        rows={2}
+                    />
+                </div>
+
+                {/* Default Value */}
+                <div className="space-y-2">
+                    <Label>Default Value</Label>
+                    <Input
+                        placeholder="Default or fixed value for this property"
+                        value={property.defaultValue}
+                        onChange={(e) => updateProperty({...property, defaultValue: e.target.value})}
+                    />
+                </div>
+
+                {/* Enum Values */}
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                        <Label>Enum Values</Label>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={addEnumValue}
+                        >
+                            <Plus className="h-4 w-4 mr-1" />
+                            Add Value
+                        </Button>
+                    </div>
+
+                    {property.enumValues.length === 0 ? (
+                        <p className="text-sm text-muted-foreground italic">No enum values defined</p>
+                    ) : (
+                        <div className="space-y-2">
+                            {property.enumValues.map((enumValue, index) => (
+                                <div key={index} className="flex gap-2">
+                                    <Input
+                                        placeholder="Enum value"
+                                        value={enumValue}
+                                        onChange={(e) => updateEnumValue(index, e.target.value)}
+                                    />
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => removeEnumValue(index)}
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {/* Required Checkbox */}
+                <div className="flex items-center space-x-2">
+                    <Checkbox
+                        checked={property.required}
+                        onCheckedChange={(checked) => updateProperty({...property, required: !!checked})}
+                    />
+                    <Label>Required</Label>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex justify-end space-x-2 pt-2">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={onCancel}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        type="button"
+                        onClick={onSave}
+                        className="bg-teal-600 hover:bg-teal-700"
+                    >
+                        {isNew ? 'Add Property' : 'Save Changes'}
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
+    )
+}
+
+const PropertyPreview = ({ property, onEdit, onRemove, isFormDisabled }: {
+    property: BodyProperty
+    onEdit: () => void
+    onRemove: () => void
+    isFormDisabled: boolean
+}) => {
+    const getPreviewValue = () => {
+        if (property.defaultValue) return property.defaultValue
+        if (property.enumValues.length > 0) return property.enumValues[0]
+        switch (property.type) {
+            case "number": return "0"
+            case "boolean": return "false"
+            case "object": return "{}"
+            case "array": return "[]"
+            default: return "\"example\""
+        }
+    }
+
+    return (
+        <Card className="border hover:border-gray-300 transition-colors">
+            <CardContent className="p-3">
+                <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                            <span className="font-medium text-sm">{property.key}</span>
+                            <Badge variant="secondary" className="text-xs">{property.type}</Badge>
+                            {property.required && (
+                                <Badge variant="destructive" className="text-xs">Required</Badge>
+                            )}
+                            {property.enumValues.length > 0 && (
+                                <Badge variant="outline" className="text-xs">
+                                    Enum ({property.enumValues.length})
+                                </Badge>
+                            )}
+                        </div>
+
+                        {property.description && (
+                            <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{property.description}</p>
+                        )}
+
+                        <div className="text-xs text-muted-foreground">
+                            <span className="font-mono bg-muted px-1.5 py-0.5 rounded">
+                                "{property.key}": {getPreviewValue()}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-1 ml-2">
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={onEdit}
+                            disabled={isFormDisabled}
+                        >
+                            <Edit className="h-3 w-3" />
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={onRemove}
+                            disabled={isFormDisabled}
+                        >
+                            <X className="h-3 w-3" />
+                        </Button>
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+    )
+}
+
 export function VapiApiRequestTool({ tool, onSave }: { tool: ApiRequestTool, onSave: (toolData: UpdateVapiToolDto) => void }) {
     const [name, setName] = useState(tool.function.name)
     const [description, setDescription] = useState(tool.function.description)
@@ -60,8 +302,9 @@ export function VapiApiRequestTool({ tool, onSave }: { tool: ApiRequestTool, onS
         }))
     })
     
+    const [editingPropertyIndex, setEditingPropertyIndex] = useState<number | null>(null)
     const [editingProperty, setEditingProperty] = useState<BodyProperty | null>(null)
-    const [isPropertyDialogOpen, setIsPropertyDialogOpen] = useState(false)
+    const [newProperty, setNewProperty] = useState<BodyProperty | null>(null)
     
     const [saving, setSaving] = useState(false)
 
@@ -78,12 +321,16 @@ export function VapiApiRequestTool({ tool, onSave }: { tool: ApiRequestTool, onS
         if (!p.key.trim()) return acc
         let example: any = p.defaultValue
         if (!example || example === "") {
-            switch (p.type) {
-                case "number": example = 0; break
-                case "boolean": example = false; break
-                case "object": example = {}; break
-                case "array": example = []; break
-                default: example = "example"; break
+            if (p.enumValues.length > 0) {
+                example = p.enumValues[0]
+            } else {
+                switch (p.type) {
+                    case "number": example = 0; break
+                    case "boolean": example = false; break
+                    case "object": example = {}; break
+                    case "array": example = []; break
+                    default: example = "example"; break
+                }
             }
         }
         acc[p.key] = example
@@ -105,68 +352,43 @@ export function VapiApiRequestTool({ tool, onSave }: { tool: ApiRequestTool, onS
     }
 
     const addBodyProperty = () => {
-        const newProperty = { key: "", description: "", type: "string", defaultValue: "", enumValues: [], required: false }
-        setEditingProperty(newProperty)
-        setIsPropertyDialogOpen(true)
+        const newProp = { key: "", description: "", type: "string", defaultValue: "", enumValues: [], required: false }
+        setNewProperty(newProp)
     }
 
-    const editBodyProperty = (property: BodyProperty) => {
-        setEditingProperty({ ...property })
-        setIsPropertyDialogOpen(true)
+    const editBodyProperty = (index: number) => {
+        setEditingPropertyIndex(index)
+        setEditingProperty({ ...bodyProperties[index] })
+    }
+
+    const cancelEdit = () => {
+        setEditingPropertyIndex(null)
+        setEditingProperty(null)
+        setNewProperty(null)
     }
 
     const removeBodyProperty = (index: number) => {
         setBodyProperties(bodyProperties.filter((_, i) => i !== index))
     }
 
-    const savePropertyChanges = () => {
-        if (!editingProperty) return
-        
-        if (!editingProperty.key.trim()) {
+    const savePropertyChanges = (property: BodyProperty, isNew: boolean = false) => {
+        if (!property.key.trim()) {
             toast.error("Property name is required")
             return
         }
 
-        const existingIndex = bodyProperties.findIndex(p => p.key === editingProperty.key)
-        
-        if (existingIndex >= 0) {
+        if (isNew) {
+            // Add new property
+            setBodyProperties([...bodyProperties, property])
+            setNewProperty(null)
+        } else if (editingPropertyIndex !== null) {
             // Update existing property
             const newProperties = [...bodyProperties]
-            newProperties[existingIndex] = editingProperty
+            newProperties[editingPropertyIndex] = property
             setBodyProperties(newProperties)
-        } else {
-            // Add new property
-            setBodyProperties([...bodyProperties, editingProperty])
+            setEditingPropertyIndex(null)
+            setEditingProperty(null)
         }
-        
-        setIsPropertyDialogOpen(false)
-        setEditingProperty(null)
-    }
-
-    const addEnumValue = () => {
-        if (!editingProperty) return
-        setEditingProperty({
-            ...editingProperty,
-            enumValues: [...editingProperty.enumValues, ""]
-        })
-    }
-
-    const updateEnumValue = (index: number, value: string) => {
-        if (!editingProperty) return
-        const newEnumValues = [...editingProperty.enumValues]
-        newEnumValues[index] = value
-        setEditingProperty({
-            ...editingProperty,
-            enumValues: newEnumValues
-        })
-    }
-
-    const removeEnumValue = (index: number) => {
-        if (!editingProperty) return
-        setEditingProperty({
-            ...editingProperty,
-            enumValues: editingProperty.enumValues.filter((_, i) => i !== index)
-        })
     }
 
     const validateHeaders = () => {
@@ -281,150 +503,6 @@ export function VapiApiRequestTool({ tool, onSave }: { tool: ApiRequestTool, onS
             return "Both name and value are required"
         }
         return null
-    }
-
-    const PropertyEditDialog = () => {
-        if (!editingProperty) return null
-
-        return (
-            <Dialog open={isPropertyDialogOpen} onOpenChange={setIsPropertyDialogOpen}>
-                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                    <DialogHeader>
-                        <DialogTitle>
-                            {bodyProperties.some(p => p.key === editingProperty.key) ? 'Edit Property' : 'Add Property'}
-                        </DialogTitle>
-                    </DialogHeader>
-                    
-                    <div className="space-y-4">
-                        {/* Property Name */}
-                        <div className="space-y-2">
-                            <Label htmlFor="property-name">Name</Label>
-                            <Textarea
-                                id="property-name"
-                                placeholder="Property key"
-                                value={editingProperty.key}
-                                onChange={(e) => setEditingProperty({...editingProperty, key: e.target.value})}
-                                rows={1}
-                                className="resize-none"
-                            />
-                        </div>
-
-                        {/* Property Type */}
-                        <div className="space-y-2">
-                            <Label htmlFor="property-type">Type</Label>
-                            <Select 
-                                value={editingProperty.type} 
-                                onValueChange={(value) => setEditingProperty({...editingProperty, type: value})}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="string">string</SelectItem>
-                                    <SelectItem value="number">number</SelectItem>
-                                    <SelectItem value="boolean">boolean</SelectItem>
-                                    <SelectItem value="object">object</SelectItem>
-                                    <SelectItem value="array">array</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        {/* Default Value */}
-                        <div className="space-y-2">
-                            <Label htmlFor="default-value">Default Value</Label>
-                            <Textarea
-                                id="default-value"
-                                placeholder="Default or fixed value for this property"
-                                value={editingProperty.defaultValue}
-                                onChange={(e) => setEditingProperty({...editingProperty, defaultValue: e.target.value})}
-                                rows={2}
-                            />
-                            <p className="text-xs text-muted-foreground">Default or fixed value for this property</p>
-                        </div>
-
-                        {/* Description */}
-                        <div className="space-y-2">
-                            <Label htmlFor="property-description">Description</Label>
-                            <Textarea
-                                id="property-description"
-                                placeholder="Property description (optional)"
-                                value={editingProperty.description}
-                                onChange={(e) => setEditingProperty({...editingProperty, description: e.target.value})}
-                                rows={3}
-                            />
-                        </div>
-
-                        {/* Enum Values */}
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                                <Label>Enum Values</Label>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={addEnumValue}
-                                >
-                                    <Plus className="h-4 w-4 mr-1" />
-                                    Add Value
-                                </Button>
-                            </div>
-                            
-                            {editingProperty.enumValues.length === 0 ? (
-                                <p className="text-sm text-muted-foreground italic">No enum values defined</p>
-                            ) : (
-                                <div className="space-y-2">
-                                    {editingProperty.enumValues.map((enumValue, index) => (
-                                        <div key={index} className="flex gap-2">
-                                            <Input
-                                                placeholder="Enum value"
-                                                value={enumValue}
-                                                onChange={(e) => updateEnumValue(index, e.target.value)}
-                                            />
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => removeEnumValue(index)}
-                                            >
-                                                <X className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Required Checkbox */}
-                        <div className="flex items-center space-x-2">
-                            <Checkbox
-                                id="required"
-                                checked={editingProperty.required}
-                                onCheckedChange={(checked) => setEditingProperty({...editingProperty, required: !!checked})}
-                            />
-                            <Label htmlFor="required">Required</Label>
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="flex justify-end space-x-2 pt-4">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => setIsPropertyDialogOpen(false)}
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                type="button"
-                                onClick={savePropertyChanges}
-                                className="bg-teal-600 hover:bg-teal-700"
-                            >
-                                Apply
-                            </Button>
-                        </div>
-                    </div>
-                </DialogContent>
-            </Dialog>
-        )
     }
 
     return (
@@ -579,7 +657,7 @@ export function VapiApiRequestTool({ tool, onSave }: { tool: ApiRequestTool, onS
                             variant="outline"
                             size="sm"
                             onClick={addBodyProperty}
-                            disabled={isFormDisabled}
+                            disabled={isFormDisabled || newProperty !== null}
                         >
                             <Plus className="h-4 w-4 mr-1" />
                             Add Property
@@ -587,58 +665,44 @@ export function VapiApiRequestTool({ tool, onSave }: { tool: ApiRequestTool, onS
                     </div>
                     <p className="text-xs text-muted-foreground">Define the JSON fields your endpoint accepts. Mark required fields as needed.</p>
                     
-                    {bodyProperties.length === 0 ? (
-                        <p className="text-sm text-muted-foreground italic">No properties defined</p>
-                    ) : (
-                        <div className="space-y-2">
-                            {bodyProperties.map((property, index) => (
-                                <div key={index} className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-medium">{property.key}</span>
-                                            <span className="text-xs bg-muted px-2 py-1 rounded">{property.type}</span>
-                                            {property.required && (
-                                                <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">Required</span>
-                                            )}
-                                            {property.enumValues.length > 0 && (
-                                                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                                                    Enum ({property.enumValues.length})
-                                                </span>
-                                            )}
-                                        </div>
-                                        {property.description && (
-                                            <p className="text-sm text-muted-foreground mt-1">{property.description}</p>
-                                        )}
-                                        {property.defaultValue && (
-                                            <p className="text-xs text-muted-foreground mt-1">
-                                                Default: <code className="bg-muted px-1 rounded">{property.defaultValue}</code>
-                                            </p>
-                                        )}
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => editBodyProperty(property)}
-                                            disabled={isFormDisabled}
-                                        >
-                                            <Edit className="h-4 w-4" />
-                                        </Button>
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => removeBodyProperty(index)}
-                                            disabled={isFormDisabled}
-                                        >
-                                            <X className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
+                    <div className="space-y-3">
+                        {/* New Property Card */}
+                        {newProperty && (
+                            <PropertyCard
+                                property={newProperty}
+                                isNew={true}
+                                onSave={() => savePropertyChanges(newProperty, true)}
+                                onCancel={cancelEdit}
+                                updateProperty={setNewProperty}
+                            />
+                        )}
+
+                        {/* Existing Properties */}
+                        {bodyProperties.map((property, index) => (
+                            <div key={index}>
+                                {editingPropertyIndex === index && editingProperty ? (
+                                    <PropertyCard
+                                        property={editingProperty}
+                                        isNew={false}
+                                        onSave={() => savePropertyChanges(editingProperty, false)}
+                                        onCancel={cancelEdit}
+                                        updateProperty={setEditingProperty}
+                                    />
+                                ) : (
+                                    <PropertyPreview
+                                        property={property}
+                                        onEdit={() => editBodyProperty(index)}
+                                        onRemove={() => removeBodyProperty(index)}
+                                        isFormDisabled={isFormDisabled}
+                                    />
+                                )}
+                            </div>
+                        ))}
+
+                        {bodyProperties.length === 0 && !newProperty && (
+                            <p className="text-sm text-muted-foreground italic">No properties defined</p>
+                        )}
+                    </div>
                 </div>
 
                 <div className="flex flex-wrap gap-2">
@@ -675,8 +739,6 @@ export function VapiApiRequestTool({ tool, onSave }: { tool: ApiRequestTool, onS
                     )}
                 </Button>
             </CardContent>
-            
-            <PropertyEditDialog />
         </Card>
     )
 }

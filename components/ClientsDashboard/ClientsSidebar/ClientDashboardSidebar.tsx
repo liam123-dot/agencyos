@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import {
   BarChart3,
+  Book,
   Bot,
   CreditCard,
   Hash,
@@ -94,6 +95,12 @@ const navigationSections: NavigationSection[] = [
         url: "/app/workflows",
         icon: Workflow,
         // badge: "Beta",
+      },
+      {
+        title: 'Knowledge Base',
+        description: 'Manage your knowledge base',
+        url: "/app/knowledge-base",
+        icon: Book,
       },
       {
         title: "Phone Numbers",
