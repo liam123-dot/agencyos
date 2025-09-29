@@ -83,7 +83,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
                     isActive={pathname === item.url}
                     tooltip={item.title}
                   >
-                    <Link href={item.url}>
+                    <Link href={item.url} prefetch={true}>
                       <item.icon />
                       {state === 'expanded' && <span>{item.title}</span>}
                     </Link>

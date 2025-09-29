@@ -1,19 +1,28 @@
 'use client'
 
-import { useState, useEffect, useTransition } from "react";
+import { Fragment, useEffect, useState, useTransition } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { Search, Download, Phone, Filter, Play } from "lucide-react";
+import { Search, Phone, Filter, ChevronRight } from "lucide-react";
 import { getCalls } from "./CallsServerComponent";
 import { CallsPagination } from "./CallsPagination";
 import { CallsLimitSelector } from "./CallsLimitSelector";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatDistanceToNow } from "date-fns";
-import { CallDetailsDialog } from "./CallDetailsDialog";
 import { Vapi } from "@vapi-ai/server-sdk";
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
 
 interface CallsComponentProps {
     initialPage?: number;
@@ -34,7 +43,7 @@ interface Call {
     client_id: string;
     organization_id: string;
     seconds: number;
-    data: Vapi.Call;
+    data: Vapi.ServerMessageEndOfCallReport;
     created_at: string;
     updated_at: string;
     agents: Agent | null;
@@ -64,9 +73,7 @@ export function CallsComponent({ initialPage = 1, initialLimit = 10, clientId }:
     const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'all');
     const [agentFilter, setAgentFilter] = useState(searchParams.get('agent') || 'all');
     
-    // Modal state
-    const [selectedCall, setSelectedCall] = useState<Call | null>(null);
-    const [dialogOpen, setDialogOpen] = useState(false);
+    const [expandedCallId, setExpandedCallId] = useState<string | null>(null);
 
     const currentPage = parseInt(searchParams.get('page') || initialPage.toString(), 10);
     const currentLimit = parseInt(searchParams.get('limit') || initialLimit.toString(), 10);
@@ -94,7 +101,6 @@ export function CallsComponent({ initialPage = 1, initialLimit = 10, clientId }:
         try {
             setIsLoading(true);
             setError(null);
-            console.log('clientId', clientId);
             const data = await getCalls({ 
                 page, 
                 limit, 
@@ -105,7 +111,6 @@ export function CallsComponent({ initialPage = 1, initialLimit = 10, clientId }:
             });
             setCallsData(data);
         } catch (err) {
-            console.error('Error loading calls:', err);
             setError('Failed to load calls');
         } finally {
             setIsLoading(false);
@@ -133,9 +138,8 @@ export function CallsComponent({ initialPage = 1, initialLimit = 10, clientId }:
         updateURL({ search: searchQuery, status: statusFilter, agent: value });
     };
 
-    const handleViewDetails = (call: Call) => {
-        setSelectedCall(call);
-        setDialogOpen(true);
+    const toggleExpandedRow = (callId: string) => {
+        setExpandedCallId((prev) => (prev === callId ? null : callId));
     };
 
     const formatDuration = (seconds: number) => {
@@ -159,16 +163,28 @@ export function CallsComponent({ initialPage = 1, initialLimit = 10, clientId }:
         return 'completed';
     };
 
-    const getStatusVariant = (status: string) => {
+    const getStatusStyles = (status: string) => {
         switch (status.toLowerCase()) {
             case 'completed':
-                return 'default';
+                return {
+                    dot: 'bg-emerald-500',
+                    badge: 'bg-emerald-50 text-emerald-600',
+                };
             case 'failed':
-                return 'destructive';
+                return {
+                    dot: 'bg-rose-500',
+                    badge: 'bg-rose-50 text-rose-600',
+                };
             case 'in progress':
-                return 'secondary';
+                return {
+                    dot: 'bg-amber-400',
+                    badge: 'bg-amber-50 text-amber-600',
+                };
             default:
-                return 'secondary';
+                return {
+                    dot: 'bg-slate-400',
+                    badge: 'bg-slate-100 text-slate-600',
+                };
         }
     };
 
@@ -190,6 +206,56 @@ export function CallsComponent({ initialPage = 1, initialLimit = 10, clientId }:
         return callData?.customer?.number || 'Unknown';
     };
 
+const assistantRoles = new Set(["assistant", "assistant_message", "bot", "ai", "agent", "assistantresponse", "assistant_response", "assistantoutput"]);
+const customerRoles = new Set(["user", "customer", "caller", "human", "client", "customer_message", "user_message", "customerresponse"]);
+
+const getTranscriptEntries = (callData: any, agentLabel: string) => {
+    const entries: { speaker: string; content: string; id: string | number; time?: string }[] = [];
+
+    if (Array.isArray(callData?.messages)) {
+        callData.messages.forEach((msg: any, index: number) => {
+            const rawContent = msg?.message ?? msg?.content;
+            const content = typeof rawContent === 'string' ? rawContent.trim() : '';
+            if (!content) {
+                return;
+            }
+
+            const rawRole = msg?.role ?? msg?.speaker ?? msg?.source;
+            const role = typeof rawRole === 'string' ? rawRole.toLowerCase() : '';
+            const timestamp = msg?.timestamp ?? msg?.time ?? msg?.created_at;
+            const timeLabel = typeof timestamp === 'string' && timestamp.trim().length > 0 ? timestamp : undefined;
+
+            let speaker: string | null = null;
+            if (assistantRoles.has(role)) {
+                speaker = agentLabel || 'Agent';
+            } else if (customerRoles.has(role)) {
+                speaker = 'Customer';
+            }
+
+            if (!speaker) {
+                return;
+            }
+
+            entries.push({
+                speaker,
+                content,
+                id: msg?.id ?? `${role || 'entry'}-${index}`,
+                time: timeLabel,
+            });
+        });
+    }
+
+    if (entries.length === 0 && typeof callData?.transcript === 'string' && callData.transcript.trim().length > 0) {
+        entries.push({
+            speaker: agentLabel || 'Transcript',
+            content: callData.transcript.trim(),
+            id: 'transcript',
+        });
+    }
+
+    return entries;
+};
+
     if (error) {
         return (
             <div className="text-center py-12">
@@ -209,101 +275,93 @@ export function CallsComponent({ initialPage = 1, initialLimit = 10, clientId }:
     const uniqueAgents = getUniqueAgents();
 
     return (
-        <div className="space-y-4">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Call History</h1>
-                    <p className="text-muted-foreground text-sm">
-                        View and manage all calls made through your agents
-                    </p>
-                </div>
-            </div>
-
-            {/* Search and Filters */}
-            {/* <div className="flex flex-col sm:flex-row gap-3">
-                <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        placeholder="Search calls by phone number, agent, or transcript..."
-                        value={searchQuery}
-                        onChange={(e) => handleSearch(e.target.value)}
-                        className="pl-10"
-                    />
-                </div>
-                <div className="flex gap-2">
-                    <Select value={statusFilter} onValueChange={handleStatusFilter}>
-                        <SelectTrigger className="w-[140px]">
-                            <SelectValue placeholder="All Statuses" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All Statuses</SelectItem>
-                            <SelectItem value="completed">Completed</SelectItem>
-                            <SelectItem value="failed">Failed</SelectItem>
-                            <SelectItem value="in progress">In Progress</SelectItem>
-                        </SelectContent>
-                    </Select>
-                    <Select value={agentFilter} onValueChange={handleAgentFilter}>
-                        <SelectTrigger className="w-[140px]">
-                            <SelectValue placeholder="All Agents" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All Agents</SelectItem>
-                            {uniqueAgents.map((agent) => (
-                                <SelectItem key={agent.id} value={agent.id}>
-                                    {getAgentName(agent)}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-            </div> */}
-
-            {/* Calls List */}
-            <div className="space-y-3">
-                <div className="flex items-center justify-between">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+            <div className="rounded-2xl border border-slate-100 bg-white px-6 py-6 shadow-sm">
+                <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                     <div>
-                        <h2 className="text-lg font-semibold">Recent Calls</h2>
-                        <p className="text-sm text-muted-foreground">
-                            {showLoading ? (
-                                "Loading..."
-                            ) : (
+                        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Call History</h1>
+                        <p className="text-sm text-slate-500">
+                            View and manage all calls made through your agents
+                        </p>
+                    </div>
+                    <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+                        <div className="relative w-full sm:w-auto sm:min-w-[280px]">
+                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                            <Input
+                                placeholder="Search call transcripts, agents, numbers..."
+                                value={searchQuery}
+                                onChange={(e) => handleSearch(e.target.value)}
+                                className="h-11 w-full rounded-xl border-slate-200 bg-slate-50 pl-9 text-sm focus:border-blue-500 focus:bg-white"
+                            />
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Select value={statusFilter} onValueChange={handleStatusFilter}>
+                                <SelectTrigger className="h-11 w-[150px] rounded-xl border-slate-200 bg-white text-sm">
+                                    <SelectValue placeholder="Status" />
+                                </SelectTrigger>
+                                <SelectContent align="end">
+                                    <SelectItem value="all">All Statuses</SelectItem>
+                                    <SelectItem value="completed">Completed</SelectItem>
+                                    <SelectItem value="failed">Failed</SelectItem>
+                                    <SelectItem value="in progress">In Progress</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Select value={agentFilter} onValueChange={handleAgentFilter}>
+                                <SelectTrigger className="h-11 w-[150px] rounded-xl border-slate-200 bg-white text-sm">
+                                    <SelectValue placeholder="Agent" />
+                                </SelectTrigger>
+                                <SelectContent align="end">
+                                    <SelectItem value="all">All Agents</SelectItem>
+                                    {uniqueAgents.map((agent) => (
+                                        <SelectItem key={agent.id} value={agent.id}>
+                                            {getAgentName(agent)}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <Button variant="outline" size="sm" className="h-11 rounded-xl border-slate-200 bg-white text-sm text-slate-700">
+                                <Filter className="mr-2 h-4 w-4" />
+                                More Filters
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4">
+                    <div>
+                        <h2 className="text-lg font-semibold text-slate-900">Recent Calls</h2>
+                        <p className="text-sm text-slate-500">
+                            {!showLoading && (
                                 `Showing ${calls.length} of ${totalCount} calls`
                             )}
                         </p>
                     </div>
-                    <Button variant="outline" size="sm">
-                        <Filter className="h-4 w-4 mr-2" />
-                        More Filters
-                    </Button>
+                    <CallsLimitSelector currentLimit={serverLimit} />
                 </div>
 
                 {showLoading ? (
                     <div className="space-y-2">
                         {Array.from({ length: 6 }).map((_, i) => (
-                            <Card key={i}>
-                                <CardContent className="p-2">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center space-x-3">
-                                            <div className="w-8 h-8 bg-muted rounded-full animate-pulse" />
-                                            <div className="space-y-1">
-                                                <div className="h-4 w-24 bg-muted rounded animate-pulse" />
-                                                <div className="h-3 w-32 bg-muted rounded animate-pulse" />
-                                            </div>
+                            <Card key={i} className="border-slate-100 shadow-sm">
+                                <CardContent className="flex items-center justify-between px-4 py-3">
+                                    <div className="flex items-center gap-4">
+                                        <div className="h-10 w-10 rounded-xl bg-slate-100" />
+                                        <div className="space-y-2">
+                                            <div className="h-4 w-32 rounded bg-slate-100" />
+                                            <div className="h-3 w-40 rounded bg-slate-100" />
                                         </div>
-                                        <div className="flex items-center space-x-4">
-                                            <div className="h-4 w-16 bg-muted rounded animate-pulse" />
-                                            <div className="h-6 w-20 bg-muted rounded-full animate-pulse" />
-                                            <div className="h-4 w-24 bg-muted rounded animate-pulse" />
-                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <div className="h-4 w-20 rounded bg-slate-100" />
+                                        <div className="h-6 w-24 rounded-full bg-slate-100" />
                                     </div>
                                 </CardContent>
                             </Card>
                         ))}
                     </div>
                 ) : calls.length === 0 ? (
-                    <Card>
-                        <CardContent className="p-8 text-center">
+                    <Card className="border-slate-100">
+                        <CardContent className="p-10 text-center">
                             <Phone className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
                             <h3 className="text-lg font-semibold mb-1">No calls found</h3>
                             <p className="text-muted-foreground text-sm">
@@ -315,66 +373,204 @@ export function CallsComponent({ initialPage = 1, initialLimit = 10, clientId }:
                         </CardContent>
                     </Card>
                 ) : (
-                    <div className="space-y-2">
-                        {calls.map((call) => {
-                            console.log(call)
-                            const status = getCallStatus(call.data);
-                            const agentName = getAgentName(call.agents);
-                            const duration = formatDuration(call.seconds);
-                            const timeAgo = formatDistanceToNow(new Date(call.created_at), { addSuffix: true });
-                            
-                            // Extract dynamic data from call object
-                            
-                            const type = call.data.type; // can be webCall, inboundPhoneCall, outboundPhoneCall
-                            const phoneDisplay = getPhoneDisplay(call.data);
-                            const description = call.data.analysis?.summary
-                            const outcome = call.data.endedReason
+                    <div className="mt-4 overflow-hidden rounded-xl border border-slate-100 shadow-sm">
+                        <Table className="min-w-full bg-white">
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className="w-[220px] px-6">Agent</TableHead>
+                                    <TableHead className="w-[160px] px-4">Status</TableHead>
+                                    <TableHead className="w-[200px] px-4">Customer</TableHead>
+                                    <TableHead className="w-[140px] px-4">Duration</TableHead>
+                                    <TableHead className="w-[120px] px-6 text-right">Details</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {calls.map((call) => {
+                                    const status = getCallStatus(call.data);
+                                    const agentName = getAgentName(call.agents);
+                                    const duration = formatDuration(call.seconds);
+                                    const timeAgo = formatDistanceToNow(new Date(call.created_at), { addSuffix: true });
+                                    const statusStyles = getStatusStyles(status);
 
-                            return (
-                                <Card key={call.id}>
-                                    <CardContent className="p-2">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center space-x-3">
-                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-medium text-xs ${
-                                                    status === 'completed' ? 'bg-green-500' : 
-                                                    status === 'failed' ? 'bg-red-500' : 
-                                                    status === 'in progress' ? 'bg-yellow-500' : 'bg-gray-500'
-                                                }`}>
-                                                    {status === 'completed' && '✓'}
-                                                    {status === 'failed' && '✕'}
-                                                    {status === 'in progress' && <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />}
-                                                </div>
-                                                <div className="space-y-1">
-                                                    <div className="flex items-center space-x-2">
-                                                        <span className="font-medium text-sm">{agentName}</span>
-                                                        <Badge variant={getStatusVariant(status)} className="text-xs capitalize">
-                                                            {status}
-                                                        </Badge>
-                                                        <span className="text-xs text-muted-foreground">{timeAgo}</span>
+                                    const callType = call.data.call?.type
+                                    let type;
+
+                                    if (callType === 'webCall') {
+                                        type = 'Web Call';
+                                    } else if (callType === 'inboundPhoneCall') {
+                                        type = 'Inbound Phone Call';
+                                    } else if (callType === 'outboundPhoneCall') {
+                                        type = 'Outbound Phone Call';
+                                    } else {
+                                        type = 'Unknown';
+                                    }
+
+                                    const phoneDisplay = getPhoneDisplay(call.data);
+                                    const description = call.data.analysis?.summary;
+                                    const outcome = call.data.endedReason;
+                                    const transcript = getTranscriptEntries(call.data, agentName);
+                                    const isExpanded = expandedCallId === call.id;
+
+                                    return (
+                                        <Fragment key={call.id}>
+                                            <TableRow
+                                                onClick={() => toggleExpandedRow(call.id)}
+                                                data-state={isExpanded ? "selected" : undefined}
+                                                className={cn(
+                                                    "cursor-pointer transition hover:bg-slate-50",
+                                                    isExpanded && "bg-slate-50"
+                                                )}
+                                            >
+                                                <TableCell className="px-6 py-4 align-middle">
+                                                    <div className="flex items-center gap-3">
+                                                        <button
+                                                            type="button"
+                                                            onClick={(event) => {
+                                                                event.stopPropagation();
+                                                                toggleExpandedRow(call.id);
+                                                            }}
+                                                            aria-expanded={isExpanded}
+                                                            aria-label={isExpanded ? "Collapse details" : "Expand details"}
+                                                             className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-100"
+                                                        >
+                                                            <ChevronRight
+                                                                className={cn(
+                                                                    "h-4 w-4 transition-transform",
+                                                                    isExpanded && "rotate-90"
+                                                                )}
+                                                            />
+                                                        </button>
+                                                        <div className="flex flex-col">
+                                                            <span className="text-sm font-semibold text-slate-900">{agentName}</span>
+                                                            <span className="text-xs text-slate-500">{timeAgo}</span>
+                                                        </div>
                                                     </div>
-                                                    <div className="flex items-center space-x-3 text-xs text-muted-foreground">
-                                                        <span>{phoneDisplay}</span>
-                                                        <span>{duration}</span>
+                                                </TableCell>
+                                                <TableCell className="px-4 align-middle">
+                                                    <span className={cn(
+                                                        "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium capitalize",
+                                                        statusStyles.badge
+                                                    )}>
+                                                        <span className={cn("h-2 w-2 rounded-full", statusStyles.dot)} />
+                                                        {status}
+                                                    </span>
+                                                </TableCell>
+                                                <TableCell className="px-4 align-middle">
+                                                    <div className="flex flex-col gap-1">
+                                                        <span className="text-sm font-medium text-slate-600">{type}</span>
+                                                        {/* if type is not web call, show the phone number */}
+                                                        {type !== 'Web Call' && (
+                                                            <span className="text-sm font-medium text-slate-600">{phoneDisplay}</span>
+                                                        )}
                                                     </div>
-                                                    <p className="text-xs text-muted-foreground max-w-md truncate">
-                                                        {description}
-                                                    </p>
-                                                    {outcome && (
-                                                        <p className="text-xs font-medium">
-                                                            Outcome: {outcome}
-                                                        </p>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            <Button variant="ghost" size="sm" onClick={() => handleViewDetails(call)}>
-                                                <Play className="h-4 w-4 mr-2" />
-                                                View Details
-                                            </Button>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            );
-                        })}
+                                                </TableCell>
+                                                <TableCell className="px-4 text-sm text-slate-600 align-middle">{duration}</TableCell>
+                                                <TableCell className="px-6 text-right align-middle">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={(event) => {
+                                                            event.stopPropagation();
+                                                            toggleExpandedRow(call.id);
+                                                        }}
+                                                        className="ml-auto h-9 rounded-full px-3 text-sm font-medium text-blue-600 hover:bg-blue-50"
+                                                    >
+                                                        {isExpanded ? "Hide" : "View"}
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                            {isExpanded && (
+                                                <TableRow className="bg-slate-50/70">
+                                                    <TableCell colSpan={5} className="px-6 pb-6 pt-4">
+                                                        <div className="flex flex-col gap-5 text-sm text-slate-600">
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            {type && (
+                                                                <Badge variant="secondary" className="rounded-full bg-slate-200/80 text-[11px] font-medium uppercase tracking-wide text-slate-600">
+                                                                    {type}
+                                                                </Badge>
+                                                            )}
+                                                            <Badge variant="secondary" className="rounded-full bg-slate-200/80 text-[11px] font-medium uppercase tracking-wide text-slate-600">
+                                                                Call #{call.id.slice(-8)}
+                                                            </Badge>
+                                                            <Badge variant="secondary" className="rounded-full bg-slate-200/80 text-[11px] font-medium uppercase tracking-wide text-slate-600">
+                                                                Duration {duration}
+                                                            </Badge>
+                                                            <Badge variant="secondary" className="rounded-full bg-slate-200/80 text-[11px] font-medium uppercase tracking-wide text-slate-600">
+                                                                {phoneDisplay}
+                                                            </Badge>
+                                                        </div>
+                                                            <div className="grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,1.25fr)]">
+                                                                <div className="space-y-2">
+                                                                    <p className="text-xs font-semibold uppercase text-slate-500">Summary</p>
+                                                                    <p className="rounded-xl border border-slate-200 bg-white p-4 text-sm leading-relaxed text-slate-700 text-pretty">
+                                                                        {description || "No summary captured for this call."}
+                                                                    </p>
+                                                                    <div className="space-y-2">
+                                                                        <p className="text-xs font-semibold uppercase text-slate-500">Transcript</p>
+                                                                        {transcript.length > 0 ? (
+                                                                            <ScrollArea className="h-60 rounded-xl border border-slate-200 bg-white">
+                                                                                <ol className="divide-y divide-slate-100 text-sm">
+                                                                                    {transcript.map((entry) => (
+                                                                                        <li key={entry.id} className="grid gap-2 px-4 py-3">
+                                                                                            <div className="flex items-center justify-between gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                                                                                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px]">
+                                                                                                    {entry.speaker}
+                                                                                                </span>
+                                                                                                {entry.time && (
+                                                                                                    <span className="text-[10px] font-medium capitalize text-slate-400">
+                                                                                                        {entry.time}
+                                                                                                    </span>
+                                                                                                )}
+                                                                                            </div>
+                                                                                            <p className="break-words leading-relaxed text-slate-700 text-wrap">
+                                                                                                {entry.content}
+                                                                                            </p>
+                                                                                        </li>
+                                                                                    ))}
+                                                                                </ol>
+                                                                                <ScrollBar orientation="vertical" />
+                                                                            </ScrollArea>
+                                                                        ) : (
+                                                                            <p className="rounded-xl border border-dashed border-slate-200 bg-white p-4 text-sm text-slate-500">
+                                                                                Transcript unavailable for this call.
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                    <p className="text-xs font-semibold uppercase text-slate-500">Details</p>
+                                                                    <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
+                                                                        <dl className="space-y-2">
+                                                                            <div className="flex items-center justify-between gap-4">
+                                                                                <dt className="text-xs text-slate-500">Started</dt>
+                                                                                <dd className="text-sm font-medium text-slate-700">
+                                                                                    {formatDistanceToNow(new Date(call.created_at), { addSuffix: true })}
+                                                                                </dd>
+                                                                            </div>
+                                                                            {outcome && (
+                                                                                <div className="flex items-center justify-between gap-4">
+                                                                                    <dt className="text-xs text-slate-500">Outcome</dt>
+                                                                                    <dd className="text-sm font-medium text-slate-700">
+                                                                                        {outcome
+                                                                                            .split('-')
+                                                                                            .join(' ')
+                                                                                            .replace(/^([a-zA-Z])/, (m) => m.toUpperCase())}
+                                                                                    </dd>
+                                                                                </div>
+                                                                            )}
+                                                                        </dl>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
+                                        </Fragment>
+                                    );
+                                })}
+                            </TableBody>
+                        </Table>
                     </div>
                 )}
             </div>
@@ -390,11 +586,11 @@ export function CallsComponent({ initialPage = 1, initialLimit = 10, clientId }:
             )}
 
             {/* Call Details Modal */}
-            <CallDetailsDialog
+            {/* <CallDetailsDialog
                 call={selectedCall}
                 open={dialogOpen}
                 onOpenChange={setDialogOpen}
-            />
+            /> */}
         </div>
     );
 }

@@ -4,6 +4,8 @@ import { createServerClient } from "@/lib/supabase/server"
 
 export async function getClient(id: string) {
 
+    console.log('getting client', id)
+
     if (!id) {
         throw new Error('Client ID is required')
     }

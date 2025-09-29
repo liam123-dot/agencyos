@@ -15,6 +15,8 @@ CREATE TABLE public.phone_numbers (
     twilio_account_sid TEXT,
     twilio_auth_token TEXT,
     agent_id UUID REFERENCES public.agents(id) ON DELETE SET NULL,
+    platform_id TEXT,
+    platform TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
@@ -35,6 +37,8 @@ CREATE TABLE public.phone_numbers (
 - `twilio_account_sid` (TEXT): Twilio account SID used for this number
 - `twilio_auth_token` (TEXT): Twilio auth token for this number
 - `agent_id` (UUID): Reference to the agent this phone number is assigned to (nullable)
+- `platform_id` (TEXT): External platform identifier (e.g., VAPI phone number ID)
+- `platform` (TEXT): Platform where the phone number is managed (e.g., "vapi")
 
 ### Timestamps
 - `created_at` (TIMESTAMP): When the phone number was imported
@@ -63,8 +67,16 @@ CREATE TABLE public.phone_numbers (
    - Phone numbers are imported from Twilio using client credentials
    - Each import stores the Twilio account SID and auth token used
    - Source field tracks where the number came from
+   - Phone numbers are automatically created in VAPI platform during import
+   - Platform ID and platform type are stored for external platform management
 
-3. **Multi-tenancy**:
+3. **Platform Integration**:
+   - Phone numbers are synchronized with external platforms (currently VAPI)
+   - Platform ID tracks the external platform's identifier for the phone number
+   - Platform field indicates which external platform manages the number
+   - When removing phone numbers, they are deleted from both database and external platform
+
+4. **Multi-tenancy**:
    - Phone numbers are scoped to both client and organization
    - Users can only access phone numbers for clients they have permission to view
 

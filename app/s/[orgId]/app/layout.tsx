@@ -10,6 +10,7 @@ import { MainContentWrapper } from "@/components/main-content-wrapper";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Suspense } from "react";
 import { getUser } from "@/app/api/user/getUser";
+import { getPublicOrg } from "@/app/api/user/selected-organization/getOrg";
 
 export default async function ClientDashboardLayout({
   children,
@@ -26,6 +27,9 @@ export default async function ClientDashboardLayout({
     redirect("/auth");
   }
 
+  // Fetch organization data for the sidebar
+  const organizationData = await getPublicOrg(orgId);
+
   // For now, we'll use a placeholder clientId since we don't have it in the URL structure yet
   // This would typically come from the URL params or be fetched based on the current context
 
@@ -37,6 +41,10 @@ export default async function ClientDashboardLayout({
           orgId={orgId}
           clientId={user.userData.client_id}
           isPlatformUser={user.userData.type === 'platform'}
+          organizationData={{
+            name: organizationData.name,
+            logo_url: organizationData.logo_url
+          }}
           organizationName={  
             <Suspense fallback={<Skeleton className="h-7 w-32" />}>
               <OrganizationName orgId={orgId} />

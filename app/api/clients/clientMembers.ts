@@ -2,6 +2,8 @@
 
 import { getOrg } from "../user/selected-organization/getOrg"
 import { getClient } from "./getClient"
+import { getUser } from "../user/getUser"
+import { redirect } from "next/navigation"
 import crypto from 'crypto'
 
 export async function getClientMembers(id: string) {
@@ -63,21 +65,37 @@ export async function inviteClientMember(clientId: string, email: string) {
         
 }
 
-export async function authorizedToAccessClient(clientId: string) {
-    const { organization, userData, supabaseServerClient } = await getOrg()
-    const client = await getClient(clientId)
+export async function authorizedToAccessClient(clientId?: string) {
+    let finalClientId = clientId
+    console.log('finalClientId', finalClientId)
+
+    const { userData, supabaseServerClient } = await getUser()
+    
+    // If no clientId provided, try to get it from the user
+    if (!finalClientId) {
+        finalClientId = userData.client_id
+    }
+    if (!finalClientId) {
+        redirect('/auth')
+    }
+
+    let organizationId = userData.selected_organization_id
+
+    const client = await getClient(finalClientId)
     if (!client) {
-        return false
+        redirect('/auth')
     }
-    if (!organization) {
-        if (userData.client_id !== clientId) {
-            return false
-        }
-    } else {
-        if (client.organization_id !== organization.id) {
-            return false
-        }
+
+    if (!organizationId) {
+        organizationId = client.organization_id
     }
+
+    const { data: organization, error: organizationError } = await supabaseServerClient.from('organizations').select('*').eq('id', organizationId).single()
+    if (organizationError) {
+        throw new Error('Failed to fetch organization')
+    }
+
+
 
     return {
         organization,

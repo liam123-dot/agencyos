@@ -15,8 +15,9 @@ export const config = {
      * - images - .svg, .png, .jpg, .jpeg, .gif, .webp
      * - /api/stripe/[orgId]/webhook (Stripe webhooks need public access)
      * - /api/agents/[agentId]/webhook (Agent webhooks need public access)
+     * - /api/phone-numbers/[numberid]/webhook (Phone number webhooks need public access)
      * Feel free to modify this pattern to include more paths.
      */
-    "/((?!_next/static|_next/image|favicon.ico|api/stripe/.*/webhook|api/agents/.*/webhook|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|api/stripe/.*/webhook|api/agents/.*/webhook|api/phone-numbers/.*/webhook|api/knowledge-base/.*/query|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

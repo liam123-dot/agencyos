@@ -4,6 +4,7 @@ import { Suspense } from "react"
 import { ClientProductsServer } from "./ClientProductsServer"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import CreateNewProduct from "../CreateNewProduct"
 
 interface ClientProductsComponentProps {
     clientId: string
@@ -12,9 +13,16 @@ interface ClientProductsComponentProps {
 
 export default async function ClientProductsComponent({ clientId, clientName }: ClientProductsComponentProps) {
     return (
-        <Suspense fallback={<ClientProductsComponentSkeleton />}>
-            <ClientProductsServer clientId={clientId} clientName={clientName} />
-        </Suspense>
+        <>
+        
+            <div className="flex justify-between items-center mb-4">
+                <div></div>
+                <CreateNewProduct />
+            </div>
+            <Suspense fallback={<ClientProductsComponentSkeleton />}>
+                <ClientProductsServer clientId={clientId} clientName={clientName} />
+            </Suspense>
+        </>
     )
 }
 

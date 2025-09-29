@@ -5,7 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Phone, Loader2, CheckCircle } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Phone, Loader2, CheckCircle, Plus } from "lucide-react";
 import { assignPhoneNumberToAgent } from "@/app/api/phone-numbers/assignToAgent";
 import { unassignPhoneNumberFromAgent } from "@/app/api/phone-numbers/unassignFromAgent";
 import { toast } from "sonner";
@@ -36,6 +37,7 @@ export function AgentPhoneNumbersClient({
     const [isUnassigning, setIsUnassigning] = useState<string | null>(null);
     const [localAssignedNumbers, setLocalAssignedNumbers] = useState(assignedNumbers);
     const [localAvailableNumbers, setLocalAvailableNumbers] = useState(availableNumbers);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     const handleAssign = async (phoneNumberId: string, phoneNumber: string) => {
         setIsAssigning(phoneNumberId);
@@ -50,6 +52,7 @@ export function AgentPhoneNumbersClient({
                     setLocalAssignedNumbers(prev => [...prev, { ...numberToMove, agent_id: agentId }]);
                     setLocalAvailableNumbers(prev => prev.filter(num => num.id !== phoneNumberId));
                 }
+                setIsModalOpen(false);
                 toast.success(`Phone number ${phoneNumber} assigned to ${agentName}`);
             } else {
                 toast.error(`Failed to assign phone number: ${result.error}`);
@@ -61,12 +64,36 @@ export function AgentPhoneNumbersClient({
         }
     };
 
+    const handleUnassign = async (phoneNumberId: string, phoneNumber: string) => {
+        setIsUnassigning(phoneNumberId);
+        
+        try {
+            const result = await unassignPhoneNumberFromAgent(phoneNumberId);
+            
+            if (result.success) {
+                // Move the phone number from assigned to available
+                const numberToMove = localAssignedNumbers.find(num => num.id === phoneNumberId);
+                if (numberToMove) {
+                    const unassignedNumber = { ...numberToMove, agent_id: undefined };
+                    setLocalAvailableNumbers(prev => [...prev, unassignedNumber]);
+                    setLocalAssignedNumbers(prev => prev.filter(num => num.id !== phoneNumberId));
+                }
+                toast.success(`Phone number ${phoneNumber} unassigned from ${agentName}`);
+            } else {
+                toast.error(`Failed to unassign phone number: ${result.error}`);
+            }
+        } catch (error) {
+            toast.error('An unexpected error occurred');
+        } finally {
+            setIsUnassigning(null);
+        }
+    };
+
     return (
-        <div className="space-y-6">
-            {/* Connected Phone Numbers */}
-            {localAssignedNumbers.length > 0 && (
-                <Card>
-                    <CardHeader>
+        <Card>
+            <CardHeader>
+                <div className="flex items-center justify-between">
+                    <div>
                         <CardTitle className="flex items-center gap-2">
                             <CheckCircle className="h-5 w-5 text-green-600" />
                             Connected Phone Numbers
@@ -74,131 +101,163 @@ export function AgentPhoneNumbersClient({
                         <CardDescription>
                             Phone numbers currently assigned to {agentName}
                         </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="rounded-md border">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Phone Number</TableHead>
-                                        <TableHead>Account SID</TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead>Assigned Date</TableHead>
+                    </div>
+                    <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+                        <DialogTrigger asChild>
+                            <Button>
+                                <Plus className="h-4 w-4 mr-2" />
+                                Add Number
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-none max-h-[80vh] overflow-y-auto w-fit min-w-[600px] max-w-[90vw]">
+                            <DialogHeader>
+                                <DialogTitle>Available Phone Numbers</DialogTitle>
+                                <DialogDescription>
+                                    Select a phone number to assign to {agentName} ({localAvailableNumbers.length} available)
+                                </DialogDescription>
+                            </DialogHeader>
+                            {localAvailableNumbers.length === 0 ? (
+                                <div className="text-center py-8">
+                                    <p className="text-muted-foreground mb-2">
+                                        No phone numbers available to assign.
+                                    </p>
+                                    <p className="text-sm text-muted-foreground">
+                                        Import phone numbers from Twilio in the client settings to make them available for assignment.
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="rounded-md border">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead className="w-auto">Phone Number</TableHead>
+                                                <TableHead className="w-auto">Account SID</TableHead>
+                                                <TableHead className="w-auto">Import Date</TableHead>
+                                                <TableHead className="w-auto text-right">Actions</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {localAvailableNumbers.map((number) => (
+                                                <TableRow key={number.id}>
+                                                    <TableCell className="font-medium whitespace-nowrap">
+                                                        {number.phone_number}
+                                                    </TableCell>
+                                                    <TableCell className="font-mono text-sm whitespace-nowrap">
+                                                        {number.twilio_account_sid ? 
+                                                            `${number.twilio_account_sid.substring(0, 10)}...` : 
+                                                            'N/A'
+                                                        }
+                                                    </TableCell>
+                                                    <TableCell className="text-muted-foreground whitespace-nowrap">
+                                                        {new Date(number.created_at).toLocaleDateString('en-US', {
+                                                            year: 'numeric',
+                                                            month: 'short',
+                                                            day: 'numeric',
+                                                            hour: '2-digit',
+                                                            minute: '2-digit'
+                                                        })}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <Button
+                                                            onClick={() => handleAssign(number.id, number.phone_number)}
+                                                            disabled={isAssigning === number.id}
+                                                            size="sm"
+                                                            variant="outline"
+                                                            className="whitespace-nowrap"
+                                                        >
+                                                            {isAssigning === number.id ? (
+                                                                <>
+                                                                    <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                                                                    Assigning...
+                                                                </>
+                                                            ) : (
+                                                                'Assign'
+                                                            )}
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            )}
+                        </DialogContent>
+                    </Dialog>
+                </div>
+            </CardHeader>
+            <CardContent>
+                {localAssignedNumbers.length === 0 ? (
+                    <div className="text-center py-8">
+                        <p className="text-muted-foreground mb-2">
+                            No phone numbers connected to this agent.
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                            Click "Add Number" above to assign a phone number to this agent.
+                        </p>
+                    </div>
+                ) : (
+                    <div className="rounded-md border">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className="w-auto">Phone Number</TableHead>
+                                    <TableHead className="w-auto">Account SID</TableHead>
+                                    <TableHead className="w-auto">Status</TableHead>
+                                    <TableHead className="w-auto">Assigned Date</TableHead>
+                                    <TableHead className="w-auto text-right">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {localAssignedNumbers.map((number) => (
+                                    <TableRow key={number.id}>
+                                        <TableCell className="font-medium whitespace-nowrap">
+                                            {number.phone_number}
+                                        </TableCell>
+                                        <TableCell className="font-mono text-sm whitespace-nowrap">
+                                            {number.twilio_account_sid ? 
+                                                `${number.twilio_account_sid.substring(0, 10)}...` : 
+                                                'N/A'
+                                            }
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant="default" className="bg-green-100 text-green-800 whitespace-nowrap">
+                                                Connected
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="text-muted-foreground whitespace-nowrap">
+                                            {new Date(number.created_at).toLocaleDateString('en-US', {
+                                                year: 'numeric',
+                                                month: 'short',
+                                                day: 'numeric',
+                                                hour: '2-digit',
+                                                minute: '2-digit'
+                                            })}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <Button
+                                                onClick={() => handleUnassign(number.id, number.phone_number)}
+                                                disabled={isUnassigning === number.id}
+                                                size="sm"
+                                                variant="outline"
+                                                className="whitespace-nowrap"
+                                            >
+                                                {isUnassigning === number.id ? (
+                                                    <>
+                                                        <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                                                        Unassigning...
+                                                    </>
+                                                ) : (
+                                                    'Unassign'
+                                                )}
+                                            </Button>
+                                        </TableCell>
                                     </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {localAssignedNumbers.map((number) => (
-                                        <TableRow key={number.id}>
-                                            <TableCell className="font-medium">
-                                                {number.phone_number}
-                                            </TableCell>
-                                            <TableCell className="font-mono text-sm">
-                                                {number.twilio_account_sid ? 
-                                                    `${number.twilio_account_sid.substring(0, 10)}...` : 
-                                                    'N/A'
-                                                }
-                                            </TableCell>
-                                            <TableCell>
-                                                <Badge variant="default" className="bg-green-100 text-green-800">
-                                                    Connected
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell className="text-muted-foreground">
-                                                {new Date(number.created_at).toLocaleDateString('en-US', {
-                                                    year: 'numeric',
-                                                    month: 'short',
-                                                    day: 'numeric',
-                                                    hour: '2-digit',
-                                                    minute: '2-digit'
-                                                })}
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
-
-            {/* Available Phone Numbers */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Phone className="h-5 w-5" />
-                        Available Phone Numbers
-                    </CardTitle>
-                    <CardDescription>
-                        Phone numbers that can be assigned to {agentName} ({localAvailableNumbers.length} available)
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {localAvailableNumbers.length === 0 ? (
-                        <div className="text-center py-8">
-                            <p className="text-muted-foreground mb-2">
-                                No phone numbers available to assign.
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                                Import phone numbers from Twilio in the client settings to make them available for assignment.
-                            </p>
-                        </div>
-                    ) : (
-                        <div className="rounded-md border">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Phone Number</TableHead>
-                                        <TableHead>Account SID</TableHead>
-                                        <TableHead>Import Date</TableHead>
-                                        <TableHead className="w-[120px]">Actions</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {localAvailableNumbers.map((number) => (
-                                        <TableRow key={number.id}>
-                                            <TableCell className="font-medium">
-                                                {number.phone_number}
-                                            </TableCell>
-                                            <TableCell className="font-mono text-sm">
-                                                {number.twilio_account_sid ? 
-                                                    `${number.twilio_account_sid.substring(0, 10)}...` : 
-                                                    'N/A'
-                                                }
-                                            </TableCell>
-                                            <TableCell className="text-muted-foreground">
-                                                {new Date(number.created_at).toLocaleDateString('en-US', {
-                                                    year: 'numeric',
-                                                    month: 'short',
-                                                    day: 'numeric',
-                                                    hour: '2-digit',
-                                                    minute: '2-digit'
-                                                })}
-                                            </TableCell>
-                                            <TableCell>
-                                                <Button
-                                                    onClick={() => handleAssign(number.id, number.phone_number)}
-                                                    disabled={isAssigning === number.id}
-                                                    size="sm"
-                                                    variant="outline"
-                                                >
-                                                    {isAssigning === number.id ? (
-                                                        <>
-                                                            <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                                                            Assigning...
-                                                        </>
-                                                    ) : (
-                                                        'Assign'
-                                                    )}
-                                                </Button>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
-        </div>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
     );
 }

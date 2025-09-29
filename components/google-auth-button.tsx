@@ -11,6 +11,10 @@ interface GoogleAuthButtonProps {
   className?: string;
 }
 
+const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+const googleRedirectUri = `${appUrl}/auth/callback?next=/app`;
+console.log('googleRedirectUri', googleRedirectUri);
+
 export function GoogleAuthButton({ 
   mode, 
   disabled = false, 
@@ -29,7 +33,7 @@ export function GoogleAuthButton({
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=/app`,
+          redirectTo: googleRedirectUri,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',

@@ -64,7 +64,10 @@ export default function VerifyDomain({ organizationName }: VerifyDomainProps) {
         
         if (success) {
             toast.success("Domain removed successfully")
-            window.location.reload()
+            // Reset verification status to trigger re-render
+            setVerificationStatus(null)
+            // Check status again to refresh the component
+            await checkStatus(false)
         } else {
             toast.error(error || "Failed to remove domain")
         }
@@ -93,6 +96,20 @@ export default function VerifyDomain({ organizationName }: VerifyDomainProps) {
         // If it's a subdomain, extract just the subdomain part
         if (domain.endsWith('.' + baseDomain)) {
             return domain.replace('.' + baseDomain, '')
+        }
+        
+        // Handle cases where domain might be a different format
+        // Check if the domain contains the base domain
+        if (domain.includes(baseDomain)) {
+            const parts = domain.split('.')
+            const baseParts = baseDomain.split('.')
+            
+            // If we have more parts than the base domain, it's a subdomain
+            if (parts.length > baseParts.length) {
+                // Return the subdomain parts (everything before the base domain)
+                const subdomainParts = parts.slice(0, parts.length - baseParts.length)
+                return subdomainParts.join('.')
+            }
         }
         
         // Fallback to the full domain
@@ -383,12 +400,12 @@ export default function VerifyDomain({ organizationName }: VerifyDomainProps) {
                                                 <p className="text-sm text-muted-foreground mb-1">Name/Host:</p>
                                                 <div className="flex items-center gap-2">
                                                     <code className="text-sm bg-background px-2 py-1 rounded border flex-1">
-                                                        @
+                                                        {formatHostName(verificationStatus.domain, verificationStatus.domain.split('.').slice(-2).join('.'))}
                                                     </code>
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
-                                                        onClick={() => copyToClipboard('@', 'dns-cname-record-host')}
+                                                        onClick={() => copyToClipboard(formatHostName(verificationStatus.domain, verificationStatus.domain.split('.').slice(-2).join('.')), 'dns-cname-record-host')}
                                                         className="shrink-0"
                                                     >
                                                         {copiedItems.has('dns-cname-record-host') ? (
@@ -530,12 +547,12 @@ export default function VerifyDomain({ organizationName }: VerifyDomainProps) {
                                                     <p className="text-sm text-muted-foreground mb-1">Name/Host:</p>
                                                     <div className="flex items-center gap-2">
                                                         <code className="text-sm bg-background px-2 py-1 rounded border flex-1">
-                                                            @
+                                                            {formatHostName(verificationStatus.domain, verificationStatus.domain.split('.').slice(-2).join('.'))}
                                                         </code>
                                                         <Button
                                                             variant="ghost"
                                                             size="sm"
-                                                            onClick={() => copyToClipboard('@', 'cname-record-host')}
+                                                            onClick={() => copyToClipboard(formatHostName(verificationStatus.domain, verificationStatus.domain.split('.').slice(-2).join('.')), 'cname-record-host')}
                                                             className="shrink-0"
                                                         >
                                                             {copiedItems.has('cname-record-host') ? (
