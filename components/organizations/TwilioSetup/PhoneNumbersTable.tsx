@@ -19,6 +19,7 @@ interface PhoneNumber {
 interface PhoneNumbersTableProps {
     clientId: string;
     clientName: string;
+    importButton?: React.ReactNode;
 }
 
 interface PhoneNumbersTableHandle {
@@ -26,7 +27,7 @@ interface PhoneNumbersTableHandle {
 }
 
 export const PhoneNumbersTable = forwardRef<PhoneNumbersTableHandle, PhoneNumbersTableProps>(
-    ({ clientId, clientName }, ref) => {
+    ({ clientId, clientName, importButton }, ref) => {
         const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumber[]>([])
         const [isLoading, setIsLoading] = useState(true)
         const [error, setError] = useState<string | null>(null)
@@ -60,13 +61,15 @@ export const PhoneNumbersTable = forwardRef<PhoneNumbersTableHandle, PhoneNumber
 
     if (isLoading) {
         return (
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Phone className="h-5 w-5" />
-                        Imported Phone Numbers
-                    </CardTitle>
-                    <CardDescription>Phone numbers imported from Twilio for {clientName}</CardDescription>
+            <Card className="border-border/60 shadow-sm">
+                <CardHeader className="border-b border-border/40 bg-muted/20">
+                    <div className="flex items-center justify-between">
+                        <CardTitle className="flex items-center gap-2 text-base font-medium">
+                            <Phone className="h-4 w-4" />
+                            Phone Numbers
+                        </CardTitle>
+                        {importButton}
+                    </div>
                 </CardHeader>
                 <CardContent>
                     <div className="flex items-center justify-center py-8">
@@ -80,13 +83,15 @@ export const PhoneNumbersTable = forwardRef<PhoneNumbersTableHandle, PhoneNumber
 
     if (error) {
         return (
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Phone className="h-5 w-5" />
-                        Imported Phone Numbers
-                    </CardTitle>
-                    <CardDescription>Phone numbers imported from Twilio for {clientName}</CardDescription>
+            <Card className="border-border/60 shadow-sm">
+                <CardHeader className="border-b border-border/40 bg-muted/20">
+                    <div className="flex items-center justify-between">
+                        <CardTitle className="flex items-center gap-2 text-base font-medium">
+                            <Phone className="h-4 w-4" />
+                            Phone Numbers
+                        </CardTitle>
+                        {importButton}
+                    </div>
                 </CardHeader>
                 <CardContent>
                     <div className="text-center py-8">
@@ -98,15 +103,15 @@ export const PhoneNumbersTable = forwardRef<PhoneNumbersTableHandle, PhoneNumber
     }
 
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <Phone className="h-5 w-5" />
-                    Imported Phone Numbers
-                </CardTitle>
-                <CardDescription>
-                    Phone numbers imported from Twilio for {clientName} ({phoneNumbers.length} total)
-                </CardDescription>
+        <Card className="border-border/60 shadow-sm">
+            <CardHeader className="border-b border-border/40 bg-muted/20">
+                <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2 text-base font-medium">
+                        <Phone className="h-4 w-4" />
+                        Phone Numbers ({phoneNumbers.length})
+                    </CardTitle>
+                    {importButton}
+                </div>
             </CardHeader>
             <CardContent>
                 {phoneNumbers.length === 0 ? (

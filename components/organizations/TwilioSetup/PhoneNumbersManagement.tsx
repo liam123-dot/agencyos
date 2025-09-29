@@ -25,14 +25,11 @@ export function PhoneNumbersManagement({
     }
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h2 className="text-2xl font-bold">Phone Numbers Management</h2>
-                    <p className="text-muted-foreground">
-                        Import and manage phone numbers from your Twilio account.
-                    </p>
-                </div>
+        <PhoneNumbersTable 
+            ref={tableRef}
+            clientId={clientId} 
+            clientName={clientName}
+            importButton={
                 <ImportPhoneNumbersDialog
                     clientId={clientId}
                     clientName={clientName}
@@ -40,13 +37,7 @@ export function PhoneNumbersManagement({
                     twilioAuthToken={twilioAuthToken}
                     onImportSuccess={handleImportSuccess}
                 />
-            </div>
-            
-            <PhoneNumbersTable 
-                ref={tableRef}
-                clientId={clientId} 
-                clientName={clientName} 
-            />
-        </div>
+            }
+        />
     )
 }

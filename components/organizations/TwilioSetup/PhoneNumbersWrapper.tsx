@@ -8,7 +8,7 @@ interface PhoneNumbersWrapperProps {
 
 export default async function PhoneNumbersWrapper({ clientId }: PhoneNumbersWrapperProps) {
     return (
-        <div className="space-y-6">            
+        <div>            
             <Suspense fallback={<TwilioSetupSkeleton />}>
                 <PhoneNumbersServer clientId={clientId} />
             </Suspense>

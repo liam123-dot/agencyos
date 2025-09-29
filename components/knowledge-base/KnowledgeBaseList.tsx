@@ -19,23 +19,15 @@ export async function KnowledgeBaseList() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold">Knowledge Bases</h1>
-                    <p className="text-muted-foreground mt-2">
-                        Manage your knowledge bases and their content
-                    </p>
-                </div>
-                
-                <CreateKnowledgeBaseDialog />
-            </div>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <FileText className="h-5 w-5" />
-                        Knowledge Bases ({knowledgeBases.length})
-                    </CardTitle>
+            <Card className="border-border/60 shadow-sm">
+                <CardHeader className="border-b border-border/40 bg-muted/20">
+                    <div className="flex items-center justify-between">
+                        <CardTitle className="flex items-center gap-2 text-base font-medium">
+                            <FileText className="h-4 w-4" />
+                            Knowledge Bases ({knowledgeBases.length})
+                        </CardTitle>
+                        <CreateKnowledgeBaseDialog />
+                    </div>
                 </CardHeader>
                 <CardContent>
                     {knowledgeBases.length === 0 ? (

@@ -25,12 +25,16 @@ export default function ManageBillingButton() {
     return (
         <Button 
             variant="outline" 
+            size="sm"
             onClick={handleManageBilling}
-            className="w-full"
+            disabled={isLoading}
         >
-            <CreditCard className="mr-2 h-4 w-4" />
+            {isLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+                <CreditCard className="mr-2 h-4 w-4" />
+            )}
             Manage Billing
-            {isLoading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
         </Button>
     )
 }

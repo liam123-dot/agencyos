@@ -13,7 +13,7 @@ export default async function AgentsPage({
     const { orgId } = await params
 
     return (
-        <div>
+        <div className="p-4 md:p-6">
             <ClientAgentsList clientId={client_id} orgId={orgId} />
         </div>
     )

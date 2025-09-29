@@ -14,27 +14,26 @@ export default function ClientAgentsList({ clientId, orgId }: { clientId?: strin
 
 function ClientAgentsListSkeleton() {
     return (
-        <Card className="border-none bg-transparent shadow-none">
-            <CardHeader className="gap-6 pb-0">
-                <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-                    <div className="space-y-2">
-                        <Skeleton className="h-8 w-32" />
-                        <Skeleton className="h-4 w-64" />
+        <div className="space-y-6">
+            {/* Stats Skeleton */}
+            <div className="grid gap-3 sm:grid-cols-2">
+                {[1, 2].map((item) => (
+                    <div key={item} className="rounded-2xl border border-border/80 bg-muted/20 p-5">
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="mt-3 h-8 w-20" />
                     </div>
-                    <Skeleton className="h-10 w-48 rounded-full" />
-                </div>
-                <div className="grid gap-3 sm:grid-cols-3">
-                    {[1, 2, 3].map((item) => (
-                        <div key={item} className="rounded-2xl border border-border/80 bg-muted/20 p-5">
-                            <Skeleton className="h-4 w-24" />
-                            <Skeleton className="mt-3 h-8 w-20" />
-                            <Skeleton className="mt-2 h-3 w-32" />
-                        </div>
-                    ))}
-                </div>
-            </CardHeader>
-            <CardContent className="mt-8">
-                <div className="overflow-hidden rounded-2xl border border-border/60">
+                ))}
+            </div>
+
+            {/* Card Skeleton */}
+            <Card className="border-border/60 shadow-sm">
+                <CardHeader className="border-b border-border/40 bg-muted/20">
+                    <div className="flex items-center justify-between">
+                        <Skeleton className="h-5 w-32" />
+                        <Skeleton className="h-10 w-40" />
+                    </div>
+                </CardHeader>
+                <CardContent className="p-0">
                     <Table>
                         <TableHeader>
                             <TableRow className="border-b border-border/60 bg-muted/30">
@@ -71,8 +70,8 @@ function ClientAgentsListSkeleton() {
                             ))}
                         </TableBody>
                     </Table>
-                </div>
             </CardContent>
         </Card>
+        </div>
     )
 }

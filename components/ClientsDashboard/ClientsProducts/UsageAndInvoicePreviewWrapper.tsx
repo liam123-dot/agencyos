@@ -7,11 +7,9 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 export default async function UsageAndInvoicePreviewWrapper({ clientId }: { clientId?: string }) {
     return (
-        <div className="container mx-auto px-4 max-w-7xl">
-            <Suspense fallback={<UsageAndInvoicePreviewSkeleton />}>
-                <UsageAndInvoicePreview clientId={clientId} />
-            </Suspense>
-        </div>
+        <Suspense fallback={<UsageAndInvoicePreviewSkeleton />}>
+            <UsageAndInvoicePreview clientId={clientId} />
+        </Suspense>
     )
 }
 

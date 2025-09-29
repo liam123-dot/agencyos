@@ -61,34 +61,15 @@ export async function ClientProductsServerComponent({ clientId }: { clientId?: s
     })
 
     return (
-        <div className="container mx-auto px-4 max-w-7xl">
-                {/* Header Section */}
-                <div className="mb-4">
-                    <div className="flex items-start justify-between mb-6">
-                        <div className="space-y-3">
-                            <h1 className="text-4xl font-bold tracking-tight">
-                                Your Plans & Services
-                            </h1>
-                            <p className="text-lg text-muted-foreground max-w-2xl">
-                                Manage your subscription and explore our available plans and services.
-                            </p>
-                        </div>
-                        {subscription && (
-                            <div className="flex-shrink-0">
-                                <ManageBillingButton />
-                            </div>
-                        )}
-                    </div>
-                    
-                    {/* Current Plan Details */}
-                    {subscription ? (
-                        <CurrentPlanCard subscription={subscription} sortedProducts={sortedProducts} />
-                    ) : null}
-                </div>
-            
-                {/* Products Grid - Only show if no subscription */}
-                {!subscription && products.length > 0 ? (
-                    <div className="space-y-6">
+        <div className="space-y-8">
+            {/* Current Plan Details */}
+            {subscription ? (
+                <CurrentPlanCard subscription={subscription} sortedProducts={sortedProducts} manageBillingButton={<ManageBillingButton />} />
+            ) : null}
+        
+            {/* Products Grid - Only show if no subscription */}
+            {!subscription && products.length > 0 ? (
+                <div className="space-y-6">
                         <div className="flex items-center justify-between">
                             <h2 className="text-2xl font-semibold">Available Plans</h2>
                             <div className="text-sm text-muted-foreground">
@@ -140,68 +121,60 @@ export async function ClientProductsServerComponent({ clientId }: { clientId?: s
     )
 }
 
-function CurrentPlanCard({ subscription, sortedProducts }: { subscription: Subscription; sortedProducts: Product[] }) {
+function CurrentPlanCard({ subscription, sortedProducts, manageBillingButton }: { subscription: Subscription; sortedProducts: Product[]; manageBillingButton?: React.ReactNode }) {
     // Find the current product details
     const currentProduct = sortedProducts.find(product => product.stripe_base_price_id === subscription.base_price_id)
 
     return (
-        <Card className="shadow-sm">
-            <CardHeader className="pb-4">
-                <div className="flex items-start justify-between">
-                    <div className="space-y-2">
-                        <div className="flex items-center gap-3">
-                            <CardTitle className="text-xl">
-                                Active Subscription
-                            </CardTitle>
-                            <Badge variant="secondary">
-                                Current Plan
-                            </Badge>
-                        </div>
-                        <CardDescription>
-                            Next billing: {subscription.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString() : 'Not available'}
-                        </CardDescription>
+        <Card className="border-border/60 shadow-sm">
+            <CardHeader className="border-b border-border/40 bg-muted/20">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                        <CardTitle className="text-base font-medium">
+                            Active Subscription
+                        </CardTitle>
+                        <Badge variant="secondary" className="text-xs">
+                            {currentProduct?.name || 'Current Plan'}
+                        </Badge>
                     </div>
+                    {manageBillingButton}
                 </div>
             </CardHeader>
-            <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {/* Plan Name */}
-                    <div className="space-y-2">
-                        <h3 className="text-sm font-medium text-muted-foreground">Plan</h3>
-                        <div className="text-2xl font-bold">
-                            {currentProduct?.name || 'Current Plan'}
-                        </div>
-                    </div>
-                    
+            <CardContent className="pt-6">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                     {/* Monthly Price */}
-                    <div className="space-y-2">
-                        <h3 className="text-sm font-medium text-muted-foreground">Monthly Price</h3>
+                    <div className="space-y-1">
+                        <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Monthly Price</h3>
                         <div className="text-2xl font-bold text-primary">
                             {formatCurrency(subscription.base_amount_cents / 100, subscription.currency)}
                         </div>
-                    </div>
-                    
-                    {/* Included Minutes & Per-Minute Price */}
-                    <div className="space-y-2">
-                        <h3 className="text-sm font-medium text-muted-foreground">Included Minutes</h3>
-                        <div className="space-y-1">
-                            <div className="text-2xl font-bold">
-                                {subscription.minutes_included} min
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                                {formatCurrency((subscription.per_second_price_cents * 60) / 100, subscription.currency)} per extra minute
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                {currentProduct?.description && (
-                    <div className="pt-4 border-t">
-                        <p className="text-sm text-muted-foreground">
-                            {currentProduct.description}
+                        <p className="text-xs text-muted-foreground">
+                            Next billing: {subscription.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}
                         </p>
                     </div>
-                )}
+                    
+                    {/* Included Minutes */}
+                    <div className="space-y-1">
+                        <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Included Minutes</h3>
+                        <div className="text-2xl font-bold">
+                            {subscription.minutes_included} min
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                            Per month
+                        </p>
+                    </div>
+                    
+                    {/* Overage Rate */}
+                    <div className="space-y-1">
+                        <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Overage Rate</h3>
+                        <div className="text-2xl font-bold">
+                            {formatCurrency((subscription.per_second_price_cents * 60) / 100, subscription.currency)}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                            Per extra minute
+                        </p>
+                    </div>
+                </div>
             </CardContent>
         </Card>
     )

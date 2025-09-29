@@ -17,6 +17,8 @@ export default async function PhoneNumbersPage({ searchParams }: PhoneNumbersPag
     }
 
     return (
-        <PhoneNumbersWrapper clientId={client_id} />
+        <div className="p-4 md:p-6">
+            <PhoneNumbersWrapper clientId={client_id} />
+        </div>
     )
 }

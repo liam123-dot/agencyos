@@ -322,7 +322,7 @@ export default function ClientAnalyticsComponent({ searchParams: initialSearchPa
         <div className="space-y-6 max-w-full overflow-x-hidden">
             <Card>
                 <CardHeader className="pb-0">
-                    <CardTitle className="text-xl">Analytics</CardTitle>
+                    <CardTitle className="text-base">Filters</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-4">
                     <div className="flex flex-col gap-3 md:flex-row md:items-end md:flex-wrap md:gap-4">

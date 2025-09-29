@@ -58,39 +58,33 @@ export async function ClientAgentsListServer({ clientId, orgId }: { clientId?: s
     const queryString = clientId ? `?client_id=${clientId}` : ""
 
     return (
-        <Card className="border-none bg-transparent shadow-none">
-            <CardHeader className="gap-6 pb-0">
-                <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-                    <div className="space-y-2">
-                        <CardTitle className="text-3xl font-semibold tracking-tight">Agents</CardTitle>
-                        {/* <CardDescription className="max-w-2xl text-base">
-                            Keep track of the people powering your conversations, their call volume, and recent updates.
-                        </CardDescription> */}
+        <div className="space-y-6">
+            <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl border border-border bg-gradient-to-br from-primary/10 via-background to-background p-5">
+                    <div className="flex items-center justify-between text-sm text-muted-foreground">
+                        <span>Total agents</span>
+                        <Users className="h-4 w-4" />
                     </div>
-                    <div className="flex items-center gap-3">
+                    <p className="mt-2 text-3xl font-semibold">{totalAgents}</p>
+                </div>
+                <div className="rounded-2xl border border-border bg-muted/30 p-5">
+                    <div className="flex items-center justify-between text-sm text-muted-foreground">
+                        <span>Total calls handled</span>
+                        <Activity className="h-4 w-4" />
+                    </div>
+                    <p className="mt-2 text-3xl font-semibold">{totalCalls}</p>
+                </div>
+            </div>
+
+            <Card className="border-border/60 shadow-sm">
+                <CardHeader className="border-b border-border/40 bg-muted/20">
+                    <div className="flex items-center justify-between">
+                        <CardTitle className="text-base font-medium">Agent Directory</CardTitle>
                         <CreateAgentButton clientId={clientId} />
                     </div>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-2xl border border-border bg-gradient-to-br from-primary/10 via-background to-background p-5">
-                        <div className="flex items-center justify-between text-sm text-muted-foreground">
-                            <span>Total agents</span>
-                            <Users className="h-4 w-4" />
-                        </div>
-                        <p className="mt-2 text-3xl font-semibold">{totalAgents}</p>
-                    </div>
-                    <div className="rounded-2xl border border-border bg-muted/30 p-5">
-                        <div className="flex items-center justify-between text-sm text-muted-foreground">
-                            <span>Total calls handled</span>
-                            <Activity className="h-4 w-4" />
-                        </div>
-                        <p className="mt-2 text-3xl font-semibold">{totalCalls}</p>
-                    </div>
-                </div>
-            </CardHeader>
-            <CardContent className="mt-8">
-                <div className="overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm">
-                    <Table>
+                </CardHeader>
+            <CardContent className="p-0">
+                <Table>
                         <TableHeader>
                             <TableRow className="border-b border-border/60 bg-muted/30">
                                 <TableHead className="w-[240px] text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -172,8 +166,8 @@ export async function ClientAgentsListServer({ clientId, orgId }: { clientId?: s
                             )}
                         </TableBody>
                     </Table>
-                </div>
             </CardContent>
         </Card>
+        </div>
     )
 }

@@ -14,7 +14,7 @@ export default async function ProductsPage({
     const { client_id, success } = await searchParams
 
     return (
-        <div>
+        <div className="p-4 md:p-6 space-y-8">
             <BillingSuccessHandler success={success} />
             <ClientProductsComponent clientId={client_id} />
             <UsageAndInvoicePreviewWrapper clientId={client_id} />

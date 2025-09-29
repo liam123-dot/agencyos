@@ -23,7 +23,7 @@ export default async function CallsPage({ searchParams, params }: CallsPageProps
     const currentLimit = parseInt(resolvedSearchParams.limit || '10', 10);
 
     return (
-        <div className="space-y-6">
+        <div className="p-4 md:p-6">
             <CallsComponent 
                 initialPage={currentPage}
                 initialLimit={currentLimit}

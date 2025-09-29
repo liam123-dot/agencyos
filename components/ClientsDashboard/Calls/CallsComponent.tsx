@@ -275,17 +275,12 @@ const getTranscriptEntries = (callData: any, agentLabel: string) => {
     const uniqueAgents = getUniqueAgents();
 
     return (
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-            <div className="rounded-2xl border border-slate-100 bg-white px-6 py-6 shadow-sm">
-                <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-                    <div>
-                        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Call History</h1>
-                        <p className="text-sm text-slate-500">
-                            View and manage all calls made through your agents
-                        </p>
-                    </div>
-                    <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-                        <div className="relative w-full sm:w-auto sm:min-w-[280px]">
+        <div className="space-y-6">
+            {/* Filters Card */}
+            <Card className="border-border/60 shadow-sm">
+                <CardContent className="pt-6">
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:flex-wrap">
+                        <div className="relative flex-1 sm:min-w-[280px]">
                             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                             <Input
                                 placeholder="Search call transcripts, agents, numbers..."
@@ -325,21 +320,24 @@ const getTranscriptEntries = (callData: any, agentLabel: string) => {
                             </Button>
                         </div>
                     </div>
-                </div>
+                </CardContent>
+            </Card>
 
-                <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4">
-                    <div>
-                        <h2 className="text-lg font-semibold text-slate-900">Recent Calls</h2>
-                        <p className="text-sm text-slate-500">
-                            {!showLoading && (
-                                `Showing ${calls.length} of ${totalCount} calls`
-                            )}
-                        </p>
-                    </div>
-                    <CallsLimitSelector currentLimit={serverLimit} />
+            {/* Results Info */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h2 className="text-lg font-semibold">Recent Calls</h2>
+                    <p className="text-sm text-muted-foreground">
+                        {!showLoading && (
+                            `Showing ${calls.length} of ${totalCount} calls`
+                        )}
+                    </p>
                 </div>
+                <CallsLimitSelector currentLimit={serverLimit} />
+            </div>
 
-                {showLoading ? (
+            {/* Results */}
+            {showLoading ? (
                     <div className="space-y-2">
                         {Array.from({ length: 6 }).map((_, i) => (
                             <Card key={i} className="border-slate-100 shadow-sm">
@@ -373,8 +371,9 @@ const getTranscriptEntries = (callData: any, agentLabel: string) => {
                         </CardContent>
                     </Card>
                 ) : (
-                    <div className="mt-4 overflow-hidden rounded-xl border border-slate-100 shadow-sm">
-                        <Table className="min-w-full bg-white">
+                    <Card className="border-border/60 shadow-sm">
+                        <CardContent className="p-0">
+                        <Table>
                             <TableHeader>
                                 <TableRow>
                                     <TableHead className="w-[220px] px-6">Agent</TableHead>
@@ -571,26 +570,18 @@ const getTranscriptEntries = (callData: any, agentLabel: string) => {
                                 })}
                             </TableBody>
                         </Table>
-                    </div>
+                        </CardContent>
+                    </Card>
                 )}
-            </div>
-            
             {/* Pagination */}
             {totalPages > 1 && (
-                <div className="flex justify-center pt-2">
+                <div className="flex justify-center">
                     <CallsPagination
                         currentPage={currentPage}
                         totalPages={Math.max(totalPages, 1)}
                     />
                 </div>
             )}
-
-            {/* Call Details Modal */}
-            {/* <CallDetailsDialog
-                call={selectedCall}
-                open={dialogOpen}
-                onOpenChange={setDialogOpen}
-            /> */}
         </div>
     );
 }
