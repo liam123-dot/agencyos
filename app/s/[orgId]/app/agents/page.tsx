@@ -13,7 +13,7 @@ export default async function AgentsPage({
     const { orgId } = await params
 
     return (
-        <div className="p-4 md:p-6">
+        <div className="container mx-auto p-6">
             <ClientAgentsList clientId={client_id} orgId={orgId} />
         </div>
     )
