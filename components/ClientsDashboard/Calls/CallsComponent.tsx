@@ -2,14 +2,13 @@
 
 import { Fragment, useEffect, useState, useTransition } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { Search, Phone, Filter, ChevronRight } from "lucide-react";
+import { Phone, ChevronRight } from "lucide-react";
 import { getCalls } from "./CallsServerComponent";
 import { CallsPagination } from "./CallsPagination";
 import { CallsLimitSelector } from "./CallsLimitSelector";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { formatDistanceToNow } from "date-fns";
 import { Vapi } from "@vapi-ai/server-sdk";
 import { cn } from "@/lib/utils";
@@ -68,9 +67,7 @@ export function CallsComponent({ initialPage = 1, initialLimit = 10, clientId }:
     const [error, setError] = useState<string | null>(null);
     const [isPending, startTransition] = useTransition();
     
-    // Filter states
-    const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
-    const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'all');
+    // Filter state - only agent filter
     const [agentFilter, setAgentFilter] = useState(searchParams.get('agent') || 'all');
     
     const [expandedCallId, setExpandedCallId] = useState<string | null>(null);
@@ -89,15 +86,15 @@ export function CallsComponent({ initialPage = 1, initialLimit = 10, clientId }:
             }
         });
 
-        // Reset to page 1 when filters change
-        if (params.search !== undefined || params.status !== undefined || params.agent !== undefined) {
+        // Reset to page 1 when agent filter changes
+        if (params.agent !== undefined) {
             newSearchParams.set('page', '1');
         }
 
         router.push(`${pathname}?${newSearchParams.toString()}`);
     };
 
-    const loadCalls = async (page: number, limit: number, search?: string, status?: string, agent?: string) => {
+    const loadCalls = async (page: number, limit: number, agent?: string) => {
         try {
             setIsLoading(true);
             setError(null);
@@ -105,8 +102,6 @@ export function CallsComponent({ initialPage = 1, initialLimit = 10, clientId }:
                 page, 
                 limit, 
                 clientId, 
-                search: search || searchQuery,
-                status: status === 'all' ? undefined : status,
                 agent: agent === 'all' ? undefined : agent
             });
             setCallsData(data);
@@ -119,23 +114,13 @@ export function CallsComponent({ initialPage = 1, initialLimit = 10, clientId }:
 
     useEffect(() => {
         startTransition(() => {
-            loadCalls(currentPage, currentLimit, searchQuery, statusFilter, agentFilter);
+            loadCalls(currentPage, currentLimit, agentFilter);
         });
-    }, [currentPage, currentLimit, searchQuery, statusFilter, agentFilter]);
-
-    const handleSearch = (value: string) => {
-        setSearchQuery(value);
-        updateURL({ search: value, status: statusFilter, agent: agentFilter });
-    };
-
-    const handleStatusFilter = (value: string) => {
-        setStatusFilter(value);
-        updateURL({ search: searchQuery, status: value, agent: agentFilter });
-    };
+    }, [currentPage, currentLimit, agentFilter]);
 
     const handleAgentFilter = (value: string) => {
         setAgentFilter(value);
-        updateURL({ search: searchQuery, status: statusFilter, agent: value });
+        updateURL({ agent: value });
     };
 
     const toggleExpandedRow = (callId: string) => {
@@ -275,104 +260,67 @@ const getTranscriptEntries = (callData: any, agentLabel: string) => {
     const uniqueAgents = getUniqueAgents();
 
     return (
-        <div className="space-y-6">
-            {/* Filters Card */}
-            <Card className="border-border/60 shadow-sm">
-                <CardContent className="pt-6">
-                    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:flex-wrap">
-                        <div className="relative flex-1 sm:min-w-[280px]">
-                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                            <Input
-                                placeholder="Search call transcripts, agents, numbers..."
-                                value={searchQuery}
-                                onChange={(e) => handleSearch(e.target.value)}
-                                className="h-11 w-full rounded-xl border-slate-200 bg-slate-50 pl-9 text-sm focus:border-blue-500 focus:bg-white"
-                            />
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Select value={statusFilter} onValueChange={handleStatusFilter}>
-                                <SelectTrigger className="h-11 w-[150px] rounded-xl border-slate-200 bg-white text-sm">
-                                    <SelectValue placeholder="Status" />
-                                </SelectTrigger>
-                                <SelectContent align="end">
-                                    <SelectItem value="all">All Statuses</SelectItem>
-                                    <SelectItem value="completed">Completed</SelectItem>
-                                    <SelectItem value="failed">Failed</SelectItem>
-                                    <SelectItem value="in progress">In Progress</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <Select value={agentFilter} onValueChange={handleAgentFilter}>
-                                <SelectTrigger className="h-11 w-[150px] rounded-xl border-slate-200 bg-white text-sm">
-                                    <SelectValue placeholder="Agent" />
-                                </SelectTrigger>
-                                <SelectContent align="end">
-                                    <SelectItem value="all">All Agents</SelectItem>
-                                    {uniqueAgents.map((agent) => (
-                                        <SelectItem key={agent.id} value={agent.id}>
-                                            {getAgentName(agent)}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <Button variant="outline" size="sm" className="h-11 rounded-xl border-slate-200 bg-white text-sm text-slate-700">
-                                <Filter className="mr-2 h-4 w-4" />
-                                More Filters
-                            </Button>
-                        </div>
+        <Card className="border-border/60 shadow-sm">
+            <CardHeader className="border-b border-border/60">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h2 className="text-xl font-semibold">Call History</h2>
+                        <p className="text-sm text-muted-foreground mt-1">
+                            {!showLoading && calls.length > 0 && (
+                                `${totalCount} total call${totalCount === 1 ? '' : 's'}`
+                            )}
+                        </p>
                     </div>
-                </CardContent>
-            </Card>
-
-            {/* Results Info */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h2 className="text-lg font-semibold">Recent Calls</h2>
-                    <p className="text-sm text-muted-foreground">
-                        {!showLoading && (
-                            `Showing ${calls.length} of ${totalCount} calls`
-                        )}
-                    </p>
+                    <div className="flex items-center gap-3">
+                        <Select value={agentFilter} onValueChange={handleAgentFilter}>
+                            <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Filter by agent" />
+                            </SelectTrigger>
+                            <SelectContent align="end">
+                                <SelectItem value="all">All Agents</SelectItem>
+                                {uniqueAgents.map((agent) => (
+                                    <SelectItem key={agent.id} value={agent.id}>
+                                        {getAgentName(agent)}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <CallsLimitSelector currentLimit={serverLimit} />
+                    </div>
                 </div>
-                <CallsLimitSelector currentLimit={serverLimit} />
-            </div>
-
-            {/* Results */}
+            </CardHeader>
+            <CardContent className="p-0">
             {showLoading ? (
-                    <div className="space-y-2">
+                    <div className="p-6 space-y-4">
                         {Array.from({ length: 6 }).map((_, i) => (
-                            <Card key={i} className="border-slate-100 shadow-sm">
-                                <CardContent className="flex items-center justify-between px-4 py-3">
-                                    <div className="flex items-center gap-4">
-                                        <div className="h-10 w-10 rounded-xl bg-slate-100" />
-                                        <div className="space-y-2">
-                                            <div className="h-4 w-32 rounded bg-slate-100" />
-                                            <div className="h-3 w-40 rounded bg-slate-100" />
-                                        </div>
+                            <div key={i} className="flex items-center justify-between border-b border-border/40 pb-4 last:border-0">
+                                <div className="flex items-center gap-4">
+                                    <div className="h-8 w-8 rounded-full bg-slate-100 animate-pulse" />
+                                    <div className="space-y-2">
+                                        <div className="h-4 w-32 rounded bg-slate-100 animate-pulse" />
+                                        <div className="h-3 w-24 rounded bg-slate-100 animate-pulse" />
                                     </div>
-                                    <div className="flex items-center gap-4">
-                                        <div className="h-4 w-20 rounded bg-slate-100" />
-                                        <div className="h-6 w-24 rounded-full bg-slate-100" />
-                                    </div>
-                                </CardContent>
-                            </Card>
+                                </div>
+                                <div className="flex items-center gap-6">
+                                    <div className="h-4 w-20 rounded bg-slate-100 animate-pulse" />
+                                    <div className="h-6 w-24 rounded-full bg-slate-100 animate-pulse" />
+                                    <div className="h-8 w-16 rounded bg-slate-100 animate-pulse" />
+                                </div>
+                            </div>
                         ))}
                     </div>
                 ) : calls.length === 0 ? (
-                    <Card className="border-slate-100">
-                        <CardContent className="p-10 text-center">
-                            <Phone className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-                            <h3 className="text-lg font-semibold mb-1">No calls found</h3>
-                            <p className="text-muted-foreground text-sm">
-                                {searchQuery || statusFilter !== 'all' || agentFilter !== 'all' 
-                                    ? 'Try adjusting your search filters'
-                                    : 'Start making calls to see them here'
-                                }
-                            </p>
-                        </CardContent>
-                    </Card>
+                    <div className="p-12 text-center">
+                        <Phone className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                        <h3 className="text-lg font-semibold mb-2">No calls found</h3>
+                        <p className="text-muted-foreground text-sm">
+                            {agentFilter !== 'all' 
+                                ? 'No calls found for the selected agent'
+                                : 'Start making calls to see them appear here'
+                            }
+                        </p>
+                    </div>
                 ) : (
-                    <Card className="border-border/60 shadow-sm">
-                        <CardContent className="p-0">
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -570,18 +518,17 @@ const getTranscriptEntries = (callData: any, agentLabel: string) => {
                                 })}
                             </TableBody>
                         </Table>
-                        </CardContent>
-                    </Card>
                 )}
+            </CardContent>
             {/* Pagination */}
-            {totalPages > 1 && (
-                <div className="flex justify-center">
+            {totalPages > 1 && !showLoading && calls.length > 0 && (
+                <div className="border-t border-border/60 px-6 py-4">
                     <CallsPagination
                         currentPage={currentPage}
                         totalPages={Math.max(totalPages, 1)}
                     />
                 </div>
             )}
-        </div>
+        </Card>
     );
 }
