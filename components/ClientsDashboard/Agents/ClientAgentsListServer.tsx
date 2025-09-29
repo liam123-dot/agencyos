@@ -50,18 +50,6 @@ export async function ClientAgentsListServer({ clientId, orgId }: { clientId?: s
 
     const totalAgents = agents.length
     const totalCalls = agents.reduce((sum, agent) => sum + (agent.calls_count ?? 0), 0)
-    const assignedNumbers = agents.filter((agent) => !!agent.phone_numbers).length
-    const mostRecentUpdate = agents.reduce<Date | null>((latest, agent) => {
-        const updatedAt = agent.updated_at ? new Date(agent.updated_at) : null
-        if (!updatedAt || Number.isNaN(updatedAt.getTime())) {
-            return latest
-        }
-        if (!latest || updatedAt > latest) {
-            return updatedAt
-        }
-        return latest
-    }, null)
-    const lastUpdatedLabel = mostRecentUpdate ? dateFormatter.format(mostRecentUpdate) : "No activity yet"
 
     const headersList = await headers()
     const isMainDomain = headersList.get("x-is-main-domain") === "true"
@@ -75,16 +63,12 @@ export async function ClientAgentsListServer({ clientId, orgId }: { clientId?: s
                 <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
                     <div className="space-y-2">
                         <CardTitle className="text-3xl font-semibold tracking-tight">Agents</CardTitle>
-                        <CardDescription className="max-w-2xl text-base">
+                        {/* <CardDescription className="max-w-2xl text-base">
                             Keep track of the people powering your conversations, their call volume, and recent updates.
-                        </CardDescription>
+                        </CardDescription> */}
                     </div>
                     <div className="flex items-center gap-3">
                         <CreateAgentButton clientId={clientId} />
-                        <div className="flex items-center gap-2 rounded-full border border-border bg-muted/40 px-4 py-2 text-sm text-muted-foreground">
-                            <CalendarDays className="h-4 w-4" />
-                            <span>Last updated {lastUpdatedLabel}</span>
-                        </div>
                     </div>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
