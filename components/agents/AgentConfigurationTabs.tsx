@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Save, Loader2 } from "lucide-react"
 import { updateVapiAgent, UpdateAgentConfigData } from "@/app/api/agents/updateVapiAgent"
 import { toast } from "sonner"
@@ -14,6 +15,7 @@ interface VapiAgent {
   id: string
   name?: string
   firstMessage?: string
+  firstMessageInterruptionsEnabled?: boolean
   voicemailMessage?: string
   endCallMessage?: string
   model?: any
@@ -40,11 +42,12 @@ export function AgentConfigurationTabs({ agentId, vapiAgent }: AgentConfiguratio
     name: vapiAgent.name || '',
     systemMessage: systemMessage,
     firstMessage: vapiAgent.firstMessage || '',
+    firstMessageInterruptionsEnabled: vapiAgent.firstMessageInterruptionsEnabled ?? false,
     voicemailMessage: vapiAgent.voicemailMessage || '',
     endCallMessage: vapiAgent.endCallMessage || '',
   })
 
-  const handleInputChange = (field: keyof typeof formData, value: string) => {
+  const handleInputChange = (field: keyof typeof formData, value: string | boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -58,6 +61,7 @@ export function AgentConfigurationTabs({ agentId, vapiAgent }: AgentConfiguratio
         name: formData.name,
         systemMessage: formData.systemMessage,
         firstMessage: formData.firstMessage,
+        firstMessageInterruptionsEnabled: formData.firstMessageInterruptionsEnabled,
         voicemailMessage: formData.voicemailMessage,
         endCallMessage: formData.endCallMessage,
       }
@@ -76,6 +80,7 @@ export function AgentConfigurationTabs({ agentId, vapiAgent }: AgentConfiguratio
     formData.name !== (vapiAgent.name || '') ||
     formData.systemMessage !== systemMessage ||
     formData.firstMessage !== (vapiAgent.firstMessage || '') ||
+    formData.firstMessageInterruptionsEnabled !== (vapiAgent.firstMessageInterruptionsEnabled ?? false) ||
     formData.voicemailMessage !== (vapiAgent.voicemailMessage || '') ||
     formData.endCallMessage !== (vapiAgent.endCallMessage || '')
 
@@ -152,6 +157,22 @@ export function AgentConfigurationTabs({ agentId, vapiAgent }: AgentConfiguratio
                   placeholder="The first message your agent will say when answering a call"
                   className="min-h-[100px]"
                 />
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="firstMessageInterruptionsEnabled"
+                  checked={formData.firstMessageInterruptionsEnabled}
+                  onCheckedChange={(checked) => 
+                    handleInputChange('firstMessageInterruptionsEnabled', checked === true)
+                  }
+                />
+                <Label 
+                  htmlFor="firstMessageInterruptionsEnabled" 
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  Allow interruptions during first message
+                </Label>
               </div>
               
               <div className="space-y-2">

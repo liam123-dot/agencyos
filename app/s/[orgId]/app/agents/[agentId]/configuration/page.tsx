@@ -10,6 +10,7 @@ export default async function AgentConfigurationPage({
   
   try {
     const vapiAgent = await getVapiAgent(agentId);
+    console.log(vapiAgent);
     
     return (
       <div className="space-y-6">

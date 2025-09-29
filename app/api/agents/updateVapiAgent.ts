@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache"
 export interface UpdateAgentConfigData {
     name?: string
     firstMessage?: string
+    firstMessageInterruptionsEnabled?: boolean
     voicemailMessage?: string
     endCallMessage?: string
     systemMessage?: string
@@ -50,6 +51,7 @@ export async function updateVapiAgent(agentId: string, updateData: UpdateAgentCo
     const updatePayload: any = {
         name: updateData.name,
         firstMessage: updateData.firstMessage,
+        firstMessageInterruptionsEnabled: updateData.firstMessageInterruptionsEnabled,
         voicemailMessage: updateData.voicemailMessage,
         endCallMessage: updateData.endCallMessage,
         model: {
