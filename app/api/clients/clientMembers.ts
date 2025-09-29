@@ -67,37 +67,35 @@ export async function inviteClientMember(clientId: string, email: string) {
 
 export async function authorizedToAccessClient(clientId?: string) {
     let finalClientId = clientId
+    console.log('finalClientId', finalClientId)
+
+    const { userData, supabaseServerClient } = await getUser()
     
     // If no clientId provided, try to get it from the user
     if (!finalClientId) {
-        try {
-            const { userData } = await getUser()
-            finalClientId = userData.client_id
-            
-            if (!finalClientId) {
-                // No client_id available anywhere, redirect to off
-                redirect('/auth')
-            }
-        } catch (error) {
-            // User authentication failed, redirect to off
-            redirect('/auth')
-        }
+        finalClientId = userData.client_id
+    }
+    if (!finalClientId) {
+        redirect('/auth')
     }
 
-    const { organization, userData, supabaseServerClient } = await getOrg()
+    let organizationId = userData.selected_organization_id
+
     const client = await getClient(finalClientId)
     if (!client) {
-        return false
+        redirect('/auth')
     }
-    if (!organization) {
-        if (userData.client_id !== finalClientId) {
-            return false
-        }
-    } else {
-        if (client.organization_id !== organization.id) {
-            return false
-        }
+
+    if (!organizationId) {
+        organizationId = client.organization_id
     }
+
+    const { data: organization, error: organizationError } = await supabaseServerClient.from('organizations').select('*').eq('id', organizationId).single()
+    if (organizationError) {
+        throw new Error('Failed to fetch organization')
+    }
+
+
 
     return {
         organization,

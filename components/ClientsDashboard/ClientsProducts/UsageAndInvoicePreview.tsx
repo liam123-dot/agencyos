@@ -10,6 +10,28 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { cn } from "@/lib/utils"
 import Stripe from "stripe"
 
+// Utility function to format seconds as "xm ys"
+function formatSecondsAsMinutesSeconds(totalSeconds: number): string {
+    const minutes = Math.floor(totalSeconds / 60)
+    const seconds = totalSeconds % 60
+    
+    if (minutes === 0) {
+        return `${seconds}s`
+    } else if (seconds === 0) {
+        return `${minutes}m`
+    } else {
+        return `${minutes}m ${seconds}s`
+    }
+}
+
+// Simple currency formatter - defaults to USD
+function formatCurrency(amount: number, currency: string = 'USD'): string {
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: currency.toUpperCase(),
+    }).format(amount)
+}
+
 export default async function UsageAndInvoicePreview({ clientId }: { clientId?: string }) {
     
     const { userData } = await getUser()
@@ -115,9 +137,10 @@ async function getInvoicePreview(stripe: Stripe, subscription: any, usageData: a
 
         // Calculate usage charges
         const includedMinutes = subscription.minutes_included || 0
-        const usedMinutes = usageData.totalMinutes
-        const overageMinutes = Math.max(0, usedMinutes - includedMinutes)
-        const overageCharges = overageMinutes * (subscription.per_second_price_cents * 60) / 100
+        const includedSeconds = includedMinutes * 60
+        const usedSeconds = usageData.totalSeconds
+        const overageSeconds = Math.max(0, usedSeconds - includedSeconds)
+        const overageCharges = overageSeconds * subscription.per_second_price_cents / 100
 
         return {
             baseAmount: subscription.base_amount_cents / 100,
@@ -126,16 +149,17 @@ async function getInvoicePreview(stripe: Stripe, subscription: any, usageData: a
             currency: subscription.currency,
             periodEnd: new Date(subscription.current_period_end),
             includedMinutes,
-            usedMinutes,
-            overageMinutes
+            usedSeconds,
+            overageSeconds
         }
     } catch (error) {
         console.error('Error fetching invoice preview:', error)
         // Fallback calculation
         const includedMinutes = subscription.minutes_included || 0
-        const usedMinutes = usageData.totalMinutes
-        const overageMinutes = Math.max(0, usedMinutes - includedMinutes)
-        const overageCharges = overageMinutes * (subscription.per_second_price_cents * 60) / 100
+        const includedSeconds = includedMinutes * 60
+        const usedSeconds = usageData.totalSeconds
+        const overageSeconds = Math.max(0, usedSeconds - includedSeconds)
+        const overageCharges = overageSeconds * subscription.per_second_price_cents / 100
         
         return {
             baseAmount: subscription.base_amount_cents / 100,
@@ -144,8 +168,8 @@ async function getInvoicePreview(stripe: Stripe, subscription: any, usageData: a
             currency: subscription.currency,
             periodEnd: new Date(subscription.current_period_end),
             includedMinutes,
-            usedMinutes,
-            overageMinutes
+            usedSeconds,
+            overageSeconds
         }
     }
 }
@@ -168,12 +192,13 @@ function DualProgressBar({
     const includedPercentage = maxValue > 0 ? (Math.min(includedUsed, includedTotal) / maxValue) * 100 : 0
     const overagePercentage = maxValue > 0 ? (overageUsed / maxValue) * 100 : 0
     
-    // Generate tooltip messages
+    // Generate tooltip messages (converting seconds to minutes for display)
+    const includedTotalMinutes = Math.floor(includedTotal / 60)
     const includedTooltip = includedUsed >= includedTotal 
-        ? `All ${includedTotal} included minutes used`
-        : `${includedUsed.toFixed(1)} of ${includedTotal} included minutes used`
+        ? `All ${includedTotalMinutes}m included time used`
+        : `${formatSecondsAsMinutesSeconds(includedUsed)} of ${includedTotalMinutes}m included time used`
     
-    const overageTooltip = `${overageUsed.toFixed(1)} minutes over included limit`
+    const overageTooltip = `${formatSecondsAsMinutesSeconds(overageUsed)} over included usage`
     
     return (
         <TooltipProvider>
@@ -217,16 +242,11 @@ function DualProgressBar({
 
 function UsageCard({ subscription, usageData }: { subscription: any, usageData: any }) {
     const includedMinutes = subscription.minutes_included || 0
-    const usedMinutes = usageData.totalMinutes
-    const usagePercentage = includedMinutes > 0 ? Math.min((usedMinutes / includedMinutes) * 100, 100) : 0
-    const overageMinutes = Math.max(0, usedMinutes - includedMinutes)
-
-    const formatCurrency = (cents: number, currency: string) => {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: currency,
-        }).format(cents)
-    }
+    const includedSeconds = includedMinutes * 60
+    const usedSeconds = usageData.totalSeconds
+    const usagePercentage = includedSeconds > 0 ? Math.min((usedSeconds / includedSeconds) * 100, 100) : 0
+    const overageSeconds = Math.max(0, usedSeconds - includedSeconds)
+    const overageMinutes = overageSeconds / 60 // Keep for pricing calculations
 
     return (
         <Card className="h-fit">
@@ -240,14 +260,14 @@ function UsageCard({ subscription, usageData }: { subscription: any, usageData: 
                 {/* Usage Summary */}
                 <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                     <div>
-                        <div className="text-2xl font-bold">{usedMinutes.toFixed(1)}</div>
-                        <div className="text-xs text-muted-foreground">minutes used</div>
+                        <div className="text-2xl font-bold">{formatSecondsAsMinutesSeconds(usedSeconds)}</div>
+                        <div className="text-xs text-muted-foreground">time used</div>
                     </div>
                     <div className="text-right">
-                        <div className="text-sm font-medium">{includedMinutes} included</div>
-                        {overageMinutes > 0 && (
+                        <div className="text-sm font-medium">{includedMinutes}m included</div>
+                        {overageSeconds > 0 && (
                             <div className="text-xs text-blue-600 font-medium">
-                                +{overageMinutes.toFixed(1)} overage
+                                +{formatSecondsAsMinutesSeconds(overageSeconds)} overage
                             </div>
                         )}
                     </div>
@@ -256,18 +276,18 @@ function UsageCard({ subscription, usageData }: { subscription: any, usageData: 
                 {/* Progress Bar */}
                 <div className="space-y-2">
                     <DualProgressBar
-                        includedUsed={Math.min(usedMinutes, includedMinutes)}
-                        overageUsed={overageMinutes}
-                        includedTotal={includedMinutes}
+                        includedUsed={Math.min(usedSeconds, includedSeconds)}
+                        overageUsed={overageSeconds}
+                        includedTotal={includedSeconds}
                     />
                     <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>0 min</span>
+                        <span>0</span>
                         <span className="text-center">
-                            {includedMinutes} min included
+                            {includedMinutes}m included
                         </span>
-                        {overageMinutes > 0 && (
+                        {overageSeconds > 0 && (
                             <span className="text-blue-600 font-medium">
-                                {usedMinutes.toFixed(1)} total
+                                {formatSecondsAsMinutesSeconds(usedSeconds)} total
                             </span>
                         )}
                     </div>
@@ -295,12 +315,6 @@ function UsageCard({ subscription, usageData }: { subscription: any, usageData: 
 }
 
 function InvoicePreviewCard({ subscription, invoicePreview }: { subscription: any, invoicePreview: any }) {
-    const formatCurrency = (amount: number, currency: string) => {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: currency,
-        }).format(amount)
-    }
 
     return (
         <Card className="h-fit">
@@ -333,7 +347,7 @@ function InvoicePreviewCard({ subscription, invoicePreview }: { subscription: an
                             <div>
                                 <span className="text-sm text-muted-foreground">Usage overage</span>
                                 <div className="text-xs text-muted-foreground">
-                                    {invoicePreview.overageMinutes.toFixed(1)} extra minutes
+                                    {formatSecondsAsMinutesSeconds(invoicePreview.overageSeconds)} extra time
                                 </div>
                             </div>
                             <span className="font-medium text-blue-600">

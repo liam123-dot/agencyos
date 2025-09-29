@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import Link from "next/link"
 import { headers } from "next/headers"
 import { Activity, CalendarDays, ChevronRight, Phone, Users } from "lucide-react"
+import { CreateAgentButton } from "./CreateAgentButton"
 
 type AgentRecord = {
     id: string
@@ -78,9 +79,12 @@ export async function ClientAgentsListServer({ clientId, orgId }: { clientId?: s
                             Keep track of the people powering your conversations, their call volume, and recent updates.
                         </CardDescription>
                     </div>
-                    <div className="flex items-center gap-2 rounded-full border border-border bg-muted/40 px-4 py-2 text-sm text-muted-foreground">
-                        <CalendarDays className="h-4 w-4" />
-                        <span>Last updated {lastUpdatedLabel}</span>
+                    <div className="flex items-center gap-3">
+                        <CreateAgentButton clientId={clientId} />
+                        <div className="flex items-center gap-2 rounded-full border border-border bg-muted/40 px-4 py-2 text-sm text-muted-foreground">
+                            <CalendarDays className="h-4 w-4" />
+                            <span>Last updated {lastUpdatedLabel}</span>
+                        </div>
                     </div>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -140,7 +144,7 @@ export async function ClientAgentsListServer({ clientId, orgId }: { clientId?: s
                                                         </div> */}
                                                         <div>
                                                             <p className="text-sm font-semibold leading-tight text-foreground">{displayName}</p>
-                                                            <p className="mt-1 text-xs text-muted-foreground">Agent ID • {agent.id.slice(0, 8)}</p>
+                                                            {/* <p className="mt-1 text-xs text-muted-foreground">Agent ID • {agent.id.slice(0, 8)}</p> */}
                                                         </div>
                                                     </div>
                                                 </TableCell>

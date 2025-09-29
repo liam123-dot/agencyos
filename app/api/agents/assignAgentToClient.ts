@@ -1,22 +1,20 @@
 'use server'
 
 import { VapiClient, Vapi } from "@vapi-ai/server-sdk"
-import { authorizedToAccessClient } from "../clients/clientMembers"
+
 import { getOrg } from "../user/selected-organization/getOrg"
 import { revalidatePath } from "next/cache"
+import { authorizedToAccessClient } from "../clients/clientMembers"
 
 export async function assignVapiAgentToClient(clientId: string, vapiAgentId: string) {
-    const { organization, supabaseServerClient } = await getOrg()
+    
+    const { organization, supabaseServerClient } = await authorizedToAccessClient(clientId)
     if (!organization) {
         throw new Error('Organization not found')
     }
     
-    const authorized = await authorizedToAccessClient(clientId)
-    if (!authorized) {
-        throw new Error('Unauthorized')
-    }
-
     const vapiClient = new VapiClient({token: organization.vapi_api_key})
+
     const vapiAgent = await vapiClient.assistants.get(vapiAgentId) as Vapi.Assistant
     
     // Check if agent already exists in the database
@@ -65,7 +63,10 @@ async function assignWebhookToVapiAgent(vapiKey: string, agentId: string, vapiAg
     const updatedAgent = await vapi.assistants.update(vapiAgentId, {
         server: {
           url: webhookUrl
-        }
+        },
+        serverMessages: ['end-of-call-report' as any]
       });
 
-}
+      console.log(updatedAgent)
+
+} 

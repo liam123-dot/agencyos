@@ -121,7 +121,7 @@ const navigationSections: NavigationSection[] = [
       },
       {
         title: "Settings",
-        description: "Client preferences",
+        // description: "Client preferences",
         url: "/app/settings",
         icon: Settings,
       },

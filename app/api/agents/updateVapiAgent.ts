@@ -10,6 +10,9 @@ export interface UpdateAgentConfigData {
     voicemailMessage?: string
     endCallMessage?: string
     systemMessage?: string
+    model?: {
+        knowledgeBaseId?: string
+    }
 }
 
 export async function updateVapiAgent(agentId: string, updateData: UpdateAgentConfigData) {
@@ -49,6 +52,10 @@ export async function updateVapiAgent(agentId: string, updateData: UpdateAgentCo
         firstMessage: updateData.firstMessage,
         voicemailMessage: updateData.voicemailMessage,
         endCallMessage: updateData.endCallMessage,
+        model: {
+            ...currentAgent.model,
+            knowledgeBaseId: updateData.model?.knowledgeBaseId
+        }
     }
 
     // Handle system message update in the model.messages array

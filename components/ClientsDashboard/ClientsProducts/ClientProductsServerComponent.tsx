@@ -11,6 +11,14 @@ import { getClientSubscriptions } from "@/app/api/clients/clientSubscriptions"
 import { Subscription } from "@/app/api/clients/subscriptionType"
 import ManageBillingButton from "./ManageBillingButton"
 
+// Simple currency formatter - defaults to USD
+function formatCurrency(amount: number, currency: string = 'USD'): string {
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: currency.toUpperCase(),
+    }).format(amount)
+}
+
 // Helper function to determine grid classes based on product count
 function getGridClasses(productCount: number): string {
     if (productCount === 1) {
@@ -135,14 +143,6 @@ export async function ClientProductsServerComponent({ clientId }: { clientId?: s
 function CurrentPlanCard({ subscription, sortedProducts }: { subscription: Subscription; sortedProducts: Product[] }) {
     // Find the current product details
     const currentProduct = sortedProducts.find(product => product.stripe_base_price_id === subscription.base_price_id)
-    
-    const formatCurrency = (cents: number, currency: string) => {
-        const amount = cents / 100
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: currency,
-        }).format(amount)
-    }
 
     return (
         <Card className="shadow-sm">
@@ -177,7 +177,7 @@ function CurrentPlanCard({ subscription, sortedProducts }: { subscription: Subsc
                     <div className="space-y-2">
                         <h3 className="text-sm font-medium text-muted-foreground">Monthly Price</h3>
                         <div className="text-2xl font-bold text-primary">
-                            {formatCurrency(subscription.base_amount_cents, 'GBP')}
+                            {formatCurrency(subscription.base_amount_cents / 100, subscription.currency)}
                         </div>
                     </div>
                     
@@ -189,7 +189,7 @@ function CurrentPlanCard({ subscription, sortedProducts }: { subscription: Subsc
                                 {subscription.minutes_included} min
                             </div>
                             <div className="text-sm text-muted-foreground">
-                                {formatCurrency(subscription.per_second_price_cents * 60, 'GBP')} per extra minute
+                                {formatCurrency((subscription.per_second_price_cents * 60) / 100, subscription.currency)} per extra minute
                             </div>
                         </div>
                     </div>
@@ -208,13 +208,6 @@ function CurrentPlanCard({ subscription, sortedProducts }: { subscription: Subsc
 }
 
 function ProductCard({ product, subscription }: { product: Product; subscription: Subscription | null }) {
-    const formatCurrency = (cents: number, currency: string) => {
-        const amount = cents / 100
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: currency,
-        }).format(amount)
-    }
 
     // Check if this product is the current subscription
     const isCurrentPlan = subscription && subscription.base_price_id === product.stripe_base_price_id
@@ -260,7 +253,7 @@ function ProductCard({ product, subscription }: { product: Product; subscription
                     {/* Main pricing display */}
                     <div className="text-center space-y-2 py-4">
                         <div className="text-4xl font-bold text-primary">
-                            {formatCurrency(product.base_price_cents, product.currency)}
+                            {formatCurrency(product.base_price_cents / 100, product.currency)}
                         </div>
                         <div className="text-sm font-medium text-muted-foreground">per {product.billing_interval}</div>
                     </div>
@@ -270,14 +263,14 @@ function ProductCard({ product, subscription }: { product: Product; subscription
                         <div className="flex justify-between items-center py-2">
                             <span className="text-sm font-medium text-muted-foreground">Base {product.billing_interval.charAt(0).toUpperCase() + product.billing_interval.slice(1)}ly</span>
                             <span className="text-sm font-bold">
-                                {formatCurrency(product.base_price_cents, product.currency)}
+                                {formatCurrency(product.base_price_cents / 100, product.currency)}
                             </span>
                         </div>
                         
                         <div className="flex justify-between items-center py-2 border-t border-border/30">
                             <span className="text-sm font-medium text-muted-foreground">Per Minute</span>
                             <span className="text-sm font-bold">
-                                {formatCurrency(product.price_per_minute_cents, product.currency)}
+                                {formatCurrency(product.price_per_minute_cents / 100, product.currency)}
                             </span>
                         </div>
                     </div>

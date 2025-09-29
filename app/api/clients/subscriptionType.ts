@@ -5,6 +5,7 @@ export interface Subscription {
     stripe_subscription_id: string;
     stripe_customer_id: string;
     status: string;
+    currency: string;
     
     // Base pricing info
     base_price_id: string | null;

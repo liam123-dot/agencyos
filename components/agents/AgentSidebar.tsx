@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
-import { ChevronLeft, Bot, FileText, Rocket, Hammer, Phone } from "lucide-react";
+import { ChevronLeft, Bot, FileText, Rocket, Hammer, Phone, Book } from "lucide-react";
 import { TestAgentButton } from "./TestAgentButton";
 
 const menuItems = [
@@ -22,6 +22,11 @@ const menuItems = [
       title: 'Tools',
       url: (orgId: string, agentId: string, baseUrl: string, queryString: string) => `${baseUrl}/app/agents/${agentId}/tools${queryString}`,
       icon: Hammer,
+    },
+    {
+      title: 'Knowledge Base',
+      url: (orgId: string, agentId: string, baseUrl: string, queryString: string) => `${baseUrl}/app/agents/${agentId}/knowledge-base${queryString}`,
+      icon: Book
     },
     {
       title: 'Deployment',

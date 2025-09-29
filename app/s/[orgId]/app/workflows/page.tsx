@@ -20,7 +20,7 @@ export default async function WorkflowsPage({ searchParams }: { searchParams: Pr
                         <Sparkles className="h-4 w-4 text-primary" />
                         Launching soon
                     </span>
-                    <span className="hidden sm:inline">Follow updates in the changelog.</span>
+                    {/* <span className="hidden sm:inline">Follow updates in the changelog.</span> */}
                 </div>
             </div>
         </div>
