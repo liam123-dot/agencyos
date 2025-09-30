@@ -195,11 +195,12 @@ export default function ClientAnalyticsComponent({ searchParams: initialSearchPa
             }))
             return options
         },
+        staleTime: 0, // Always consider stale to trigger background refetch
         refetchInterval: 30000, // Refetch every 30 seconds
     })
 
     // Fetch analytics using React Query
-    const { data: analyticsData, isLoading } = useQuery({
+    const { data: analyticsData, isLoading, isFetching } = useQuery({
         queryKey: ['analytics', clientId, dateRangeStart, dateRangeEnd, agentId, granularity],
         queryFn: async () => {
             if (!dateRangeStart || !dateRangeEnd) return null
@@ -217,6 +218,7 @@ export default function ClientAnalyticsComponent({ searchParams: initialSearchPa
             return analytics as AnalyticsData
         },
         enabled: !!dateRangeStart && !!dateRangeEnd,
+        staleTime: 0, // Always consider stale to trigger background refetch
         refetchInterval: 30000, // Refetch every 30 seconds
     })
 
@@ -305,11 +307,16 @@ export default function ClientAnalyticsComponent({ searchParams: initialSearchPa
 
     return (
         <div className="space-y-6 max-w-full overflow-x-hidden">
+            {/* Subtle background refetch indicator */}
+            {isFetching && !isLoading && (
+                <div className="fixed top-20 right-6 z-50 flex items-center gap-2 rounded-lg border bg-background/95 backdrop-blur-sm px-3 py-2 text-xs shadow-lg animate-in fade-in slide-in-from-right-2 pointer-events-none">
+                    <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                    <span className="text-muted-foreground">Updating data...</span>
+                </div>
+            )}
+            
             <Card>
-                <CardHeader className="pb-0">
-                    <CardTitle className="text-base">Filters</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-4">
+                <CardContent>
                     <div className="flex flex-col gap-3 md:flex-row md:items-end md:flex-wrap md:gap-4">
                         <div className="flex flex-col gap-1">
                             <span className="text-xs text-muted-foreground">Start date</span>

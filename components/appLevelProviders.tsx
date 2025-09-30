@@ -13,8 +13,11 @@ export function AppLevelProviders({ children }: AppLevelProvidersProps) {
   const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 1000 * 30, // 30 seconds
+        staleTime: 1000 * 60 * 5, // Data is fresh for 5 minutes
+        gcTime: 1000 * 60 * 30, // Keep unused data in cache for 30 minutes
         refetchOnWindowFocus: true,
+        refetchOnMount: 'always', // Always refetch on mount, but show cached data immediately
+        refetchOnReconnect: true,
       },
     },
   }));
