@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import { useQuery } from "@tanstack/react-query"
 import { getAnalytics } from "@/app/api/analytics/getAnalytics"
 import { getClientAgents } from "@/app/api/agents/getClientAgents"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -118,9 +119,6 @@ export default function ClientAnalyticsComponent({ searchParams: initialSearchPa
     const [dateRangeEnd, setDateRangeEndState] = useState<Date | undefined>(getInitialDateEnd())
     const [granularity, setGranularityState] = useState<Granularity>(getInitialGranularity())
     const [agentId, setAgentIdState] = useState<string | undefined>(getInitialAgentId())
-    const [agents, setAgents] = useState<AgentOption[]>([])
-    const [isLoading, setIsLoading] = useState(false)
-    const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null)
 
     // Wrapper functions that update both state and URL
     const setDateRangeStart = (date: Date | undefined) => {
@@ -186,31 +184,26 @@ export default function ClientAnalyticsComponent({ searchParams: initialSearchPa
         router.replace(`?${params.toString()}`, { scroll: false })
     }
 
-    // Fetch agents (client-scoped)
-    useEffect(() => {
-        let mounted = true
-        ;(async () => {
-            try {
-                const agentList = await getClientAgents(clientId)
-                if (!mounted) return
-                const options: AgentOption[] = (agentList || []).map((a: any) => ({
-                    id: a.id,
-                    name: a?.data?.name || 'Unnamed Agent',
-                }))
-                setAgents(options)
-            } catch (err) {
-                console.error('Failed to fetch agents', err)
-            }
-        })()
-        return () => {
-            mounted = false
-        }
-    }, [clientId])
+    // Fetch agents using React Query
+    const { data: agents = [] } = useQuery({
+        queryKey: ['agents', clientId],
+        queryFn: async () => {
+            const agentList = await getClientAgents(clientId)
+            const options: AgentOption[] = (agentList || []).map((a: any) => ({
+                id: a.id,
+                name: a?.data?.name || 'Unnamed Agent',
+            }))
+            return options
+        },
+        refetchInterval: 30000, // Refetch every 30 seconds
+    })
 
-    const fetchAnalytics = async () => {
-        if (!dateRangeStart || !dateRangeEnd) return
-        setIsLoading(true)
-        try {
+    // Fetch analytics using React Query
+    const { data: analyticsData, isLoading } = useQuery({
+        queryKey: ['analytics', clientId, dateRangeStart, dateRangeEnd, agentId, granularity],
+        queryFn: async () => {
+            if (!dateRangeStart || !dateRangeEnd) return null
+            
             // Format using local date, not UTC, to avoid shifting the day
             const startDate = formatDate(dateRangeStart, 'yyyy-MM-dd')
             const endDate = formatDate(dateRangeEnd, 'yyyy-MM-dd')
@@ -221,19 +214,11 @@ export default function ClientAnalyticsComponent({ searchParams: initialSearchPa
                 agentId,
                 granularity,
             })
-            setAnalyticsData(analytics as AnalyticsData)
-        } catch (error) {
-            console.error('Failed to fetch analytics:', error)
-        } finally {
-            setIsLoading(false)
-        }
-    }
-
-    // Auto-fetch whenever filters change
-    useEffect(() => {
-        fetchAnalytics()
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [dateRangeStart, dateRangeEnd, agentId, granularity, clientId])
+            return analytics as AnalyticsData
+        },
+        enabled: !!dateRangeStart && !!dateRangeEnd,
+        refetchInterval: 30000, // Refetch every 30 seconds
+    })
 
     const chartConfig = {
         calls: {

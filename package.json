@@ -37,6 +37,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@supabase/ssr": "latest",
     "@supabase/supabase-js": "latest",
+    "@tanstack/react-query": "^5.90.2",
     "@types/react-datepicker": "^6.2.0",
     "@vapi-ai/server-sdk": "^0.10.1",
     "@vapi-ai/web": "^2.3.10",

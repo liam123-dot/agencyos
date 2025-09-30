@@ -18,6 +18,8 @@ type Granularity = 'hour' | 'day' | 'week' | 'month'
 
 export async function getAnalytics({clientId, dateRangeStart, dateRangeEnd, agentId, granularity}: {clientId?: string, dateRangeStart?: string, dateRangeEnd?: string, agentId?: string, granularity?: Granularity}) {
 
+    console.log('getAnalytics', clientId, dateRangeStart, dateRangeEnd, agentId, granularity)
+
     const { userData, supabaseServerClient } = await getUser()
     
     if (!clientId) {
