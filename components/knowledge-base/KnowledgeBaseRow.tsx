@@ -1,8 +1,6 @@
-'use client'
 
-import { useRouter, useParams } from "next/navigation"
 import { TableCell, TableRow } from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
+import Link from "next/link"
 
 interface KnowledgeBase {
     id: string
@@ -18,43 +16,24 @@ interface KnowledgeBaseRowProps {
 }
 
 export function KnowledgeBaseRow({ knowledgeBase }: KnowledgeBaseRowProps) {
-    const router = useRouter()
-    const params = useParams()
-    const orgId = params.orgId as string
-
-    const handleViewClick = () => {
-        router.push(`/app/knowledge-base/${knowledgeBase.id}`)
-    }
-
-    const handleRowClick = () => {
-        router.push(`/app/knowledge-base/${knowledgeBase.id}`)
-    }
+    const href = `/app/knowledge-base/${knowledgeBase.id}`
 
     return (
-        <TableRow 
-            className="cursor-pointer hover:bg-muted/50" 
-            onClick={handleRowClick}
-        >
+        <TableRow className="group relative hover:bg-muted/50 transition-colors">
             <TableCell className="font-medium">
-                {knowledgeBase.name}
+                <Link 
+                    href={href}
+                    className="after:absolute after:inset-0 after:content-['']"
+                    prefetch={true}
+                >
+                    {knowledgeBase.name}
+                </Link>
             </TableCell>
             <TableCell className="text-sm text-muted-foreground">
                 {new Date(knowledgeBase.created_at).toLocaleDateString()}
             </TableCell>
             <TableCell className="text-sm text-muted-foreground">
                 {new Date(knowledgeBase.updated_at).toLocaleDateString()}
-            </TableCell>
-            <TableCell>
-                <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={(e) => {
-                        e.stopPropagation()
-                        handleViewClick()
-                    }}
-                >
-                    View
-                </Button>
             </TableCell>
         </TableRow>
     )

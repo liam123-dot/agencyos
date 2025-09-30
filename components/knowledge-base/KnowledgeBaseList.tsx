@@ -29,31 +29,28 @@ export async function KnowledgeBaseList() {
                         <CreateKnowledgeBaseDialog />
                     </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-0">
                     {knowledgeBases.length === 0 ? (
-                        <div className="text-center py-8">
+                        <div className="text-center py-12 px-6">
                             <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                             <p className="text-muted-foreground">No knowledge bases yet</p>
                             <p className="text-sm text-muted-foreground mt-1">Create your first knowledge base to get started</p>
                         </div>
                     ) : (
-                        <div className="overflow-x-auto">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Name</TableHead>
-                                        <TableHead className="w-32">Created</TableHead>
-                                        <TableHead className="w-32">Updated</TableHead>
-                                        <TableHead className="w-20">Actions</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {knowledgeBases.map((kb) => (
-                                        <KnowledgeBaseRow key={kb.id} knowledgeBase={kb} />
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </div>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Name</TableHead>
+                                    <TableHead>Created</TableHead>
+                                    <TableHead>Updated</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {knowledgeBases.map((kb) => (
+                                    <KnowledgeBaseRow key={kb.id} knowledgeBase={kb} />
+                                ))}
+                            </TableBody>
+                        </Table>
                     )}
                 </CardContent>
             </Card>
