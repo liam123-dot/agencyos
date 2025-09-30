@@ -157,7 +157,7 @@ export function ClientDashboardSidebar({ user, orgId, clientId, organizationName
             <SidebarMenuButton
               asChild
               className={cn(
-                "h-auto items-center gap-3 rounded-lg border border-sidebar-border bg-sidebar-accent/30 px-3 py-3",
+                "h-auto items-center gap-3 rounded-lg borderr bg-sidebar-accent/30",
                 isCollapsed && "justify-center border-none bg-transparent px-0 py-0"
               )}
             >
