@@ -6,12 +6,6 @@ export default async function AnalyticsPage() {
 
     return (
         <div className="container mx-auto p-6 space-y-6">
-            <div className="space-y-2">
-                <h1 className="text-3xl font-bold tracking-tight">Analytics Dashboard</h1>
-                <p className="text-muted-foreground">
-                    Monitor call performance, costs, and profit margins across all clients
-                </p>
-            </div>
             <AnalyticsCallsComponent analyticsData={analyticsData} />
         </div>
     )
