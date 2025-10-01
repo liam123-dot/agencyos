@@ -152,25 +152,10 @@ const CURRENCY_RATES: Record<string, number> = {
 };
 
 const CURRENCY_OPTIONS = [
-    { value: 'ORIGINAL', label: 'Original Currency' },
+    { value: 'ORIGINAL', label: 'Original' },
     { value: 'USD', label: 'USD ($)' },
     { value: 'EUR', label: 'EUR (€)' },
     { value: 'GBP', label: 'GBP (£)' },
-    { value: 'CAD', label: 'CAD ($)' },
-    { value: 'AUD', label: 'AUD ($)' },
-    { value: 'JPY', label: 'JPY (¥)' },
-    { value: 'CHF', label: 'CHF (Fr)' },
-    { value: 'NZD', label: 'NZD ($)' },
-    { value: 'SEK', label: 'SEK (kr)' },
-    { value: 'NOK', label: 'NOK (kr)' },
-    { value: 'DKK', label: 'DKK (kr)' },
-    { value: 'PLN', label: 'PLN (zł)' },
-    { value: 'INR', label: 'INR (₹)' },
-    { value: 'BRL', label: 'BRL (R$)' },
-    { value: 'MXN', label: 'MXN ($)' },
-    { value: 'ZAR', label: 'ZAR (R)' },
-    { value: 'SGD', label: 'SGD ($)' },
-    { value: 'HKD', label: 'HKD ($)' },
 ];
 
 export function AnalyticsCallsComponent() {
@@ -179,7 +164,7 @@ export function AnalyticsCallsComponent() {
     
     const [expandedCallId, setExpandedCallId] = useState<string | null>(null);
     const [decimalPlaces, setDecimalPlaces] = useState<number>(2);
-    const [displayCurrency, setDisplayCurrency] = useState<string>('USD');
+    const [displayCurrency, setDisplayCurrency] = useState<string>('ORIGINAL');
     const [searchTerm, setSearchTerm] = useState<string>("");
     const [compactView, setCompactView] = useState<boolean>(false);
 
@@ -1104,7 +1089,7 @@ export function AnalyticsCallsComponent() {
                                                                         <span className="text-rose-600 font-medium">
                                                                             {formatCurrency(call.costInLocalCurrency, call.currency)}
                                                                         </span>
-                                                                        {!compactView && call.currency.toLowerCase() !== 'usd' && (
+                                                                        {!compactView && (
                                                                             <span className="text-xs text-slate-400">
                                                                                 {formatCurrency(call.cost, 'USD')} USD
                                                                             </span>
@@ -1113,11 +1098,11 @@ export function AnalyticsCallsComponent() {
                                                                 ) : (
                                                                     <>
                                                                         <span className="text-rose-600 font-medium">
-                                                                            {formatCurrency(convertCurrency(call.costInLocalCurrency, call.currency, displayCurrency), displayCurrency)}
+                                                                            {formatCurrency(convertCurrency(call.cost, 'USD', displayCurrency), displayCurrency)}
                                                                         </span>
-                                                                        {!compactView && call.currency.toLowerCase() !== displayCurrency.toLowerCase() && (
+                                                                        {!compactView && (
                                                                             <span className="text-xs text-slate-400">
-                                                                                {formatCurrency(call.costInLocalCurrency, call.currency)} orig
+                                                                                {formatCurrency(call.cost, 'USD')} USD
                                                                             </span>
                                                                         )}
                                                                     </>
@@ -1141,58 +1126,20 @@ export function AnalyticsCallsComponent() {
                                                         </div>
                                                     </TableCell>
                                                     <TableCell className={cn("text-sm text-right", compactView ? "py-2" : "py-4")}>
-                                                        <div className="flex flex-col items-end">
-                                                            {displayCurrency === 'ORIGINAL' ? (
-                                                                <>
-                                                                    <span className="text-emerald-600 font-medium">
-                                                                        {formatCurrency(call.revenue, call.currency)}
-                                                                    </span>
-                                                                    {!compactView && call.currency.toLowerCase() !== 'usd' && (
-                                                                        <span className="text-xs text-slate-400">
-                                                                            {formatCurrency(convertCurrency(call.revenue, call.currency, 'USD'), 'USD')} USD
-                                                                        </span>
-                                                                    )}
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <span className="text-emerald-600 font-medium">
-                                                                        {formatCurrency(convertCurrency(call.revenue, call.currency, displayCurrency), displayCurrency)}
-                                                                    </span>
-                                                                    {!compactView && call.currency.toLowerCase() !== displayCurrency.toLowerCase() && (
-                                                                        <span className="text-xs text-slate-400">
-                                                                            {formatCurrency(call.revenue, call.currency)} orig
-                                                                        </span>
-                                                                    )}
-                                                                </>
-                                                            )}
-                                                        </div>
+                                                        <span className="text-emerald-600 font-medium">
+                                                            {displayCurrency === 'ORIGINAL' 
+                                                                ? formatCurrency(call.revenue, call.currency)
+                                                                : formatCurrency(convertCurrency(call.revenue, call.currency, displayCurrency), displayCurrency)
+                                                            }
+                                                        </span>
                                                     </TableCell>
                                                     <TableCell className={cn("text-sm text-right", compactView ? "py-2" : "py-4")}>
-                                                        <div className="flex flex-col items-end">
-                                                            {displayCurrency === 'ORIGINAL' ? (
-                                                                <>
-                                                                    <span className={getMarginStyles(call.margin)}>
-                                                                        {formatCurrency(call.margin, call.currency)}
-                                                                    </span>
-                                                                    {!compactView && call.currency.toLowerCase() !== 'usd' && (
-                                                                        <span className="text-xs text-slate-400">
-                                                                            {formatCurrency(convertCurrency(call.margin, call.currency, 'USD'), 'USD')} USD
-                                                                        </span>
-                                                                    )}
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <span className={getMarginStyles(call.margin)}>
-                                                                        {formatCurrency(convertCurrency(call.margin, call.currency, displayCurrency), displayCurrency)}
-                                                                    </span>
-                                                                    {!compactView && call.currency.toLowerCase() !== displayCurrency.toLowerCase() && (
-                                                                        <span className="text-xs text-slate-400">
-                                                                            {formatCurrency(call.margin, call.currency)} orig
-                                                                        </span>
-                                                                    )}
-                                                                </>
-                                                            )}
-                                                        </div>
+                                                        <span className={getMarginStyles(call.margin)}>
+                                                            {displayCurrency === 'ORIGINAL' 
+                                                                ? formatCurrency(call.margin, call.currency)
+                                                                : formatCurrency(convertCurrency(call.margin, call.currency, displayCurrency), displayCurrency)
+                                                            }
+                                                        </span>
                                                     </TableCell>
                                                     <TableCell className={cn("text-right", compactView ? "py-2" : "py-4")}>
                                                         {!compactView && (
