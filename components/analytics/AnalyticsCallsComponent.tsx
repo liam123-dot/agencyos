@@ -459,17 +459,39 @@ export function AnalyticsCallsComponent() {
         const getCostTypeLabel = (costItem: any) => {
             switch (costItem.type) {
                 case 'transcriber':
-                    return `Transcription (${costItem.transcriber?.provider || 'unknown'})`;
+                    const transcriberModel = costItem.transcriber?.model;
+                    const transcriberProvider = costItem.transcriber?.provider;
+                    return transcriberModel && transcriberProvider
+                        ? `Transcription (${transcriberModel} - ${transcriberProvider})`
+                        : `Transcription (${transcriberProvider || 'unknown'})`;
                 case 'model':
-                    return `LLM (${costItem.model?.model || 'unknown'})`;
+                    const llmModel = costItem.model?.model;
+                    const llmProvider = costItem.model?.provider;
+                    return llmModel && llmProvider
+                        ? `LLM (${llmModel} - ${llmProvider})`
+                        : `LLM (${llmModel || 'unknown'})`;
                 case 'voice':
-                    return `Voice (${costItem.voice?.provider || 'unknown'})`;
+                    const voiceModel = costItem.voice?.model;
+                    const voiceProvider = costItem.voice?.provider;
+                    return voiceModel && voiceProvider
+                        ? `Voice (${voiceModel} - ${voiceProvider})`
+                        : `Voice (${voiceProvider || 'unknown'})`;
                 case 'vapi':
                     return 'Vapi Platform';
                 case 'analysis':
-                    return `Analysis (${costItem.analysisType || 'unknown'})`;
+                    const analysisModel = costItem.model?.model;
+                    const analysisProvider = costItem.model?.provider;
+                    const analysisType = costItem.analysisType;
+                    const typeLabel = analysisType ? analysisType.charAt(0).toUpperCase() + analysisType.slice(1).replace(/([A-Z])/g, ' $1') : 'Analysis';
+                    return analysisModel && analysisProvider
+                        ? `${typeLabel} (${analysisModel} - ${analysisProvider})`
+                        : `${typeLabel} (${analysisModel || analysisProvider || 'unknown'})`;
                 case 'knowledge-base':
-                    return 'Knowledge Base';
+                    const kbModel = costItem.model?.model;
+                    const kbProvider = costItem.model?.provider;
+                    return kbModel && kbProvider
+                        ? `Knowledge Base (${kbModel} - ${kbProvider})`
+                        : 'Knowledge Base';
                 default:
                     return costItem.type || 'Other';
             }

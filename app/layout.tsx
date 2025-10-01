@@ -9,7 +9,7 @@ const defaultUrl = process.env.VERCEL_URL
 
 export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
-  title: "Whitelabel - Modern Web Platform",
+  title: "AgencyOS - Modern Web Platform",
   description: "A modern, customizable platform built with Next.js and Supabase",
 };
 
