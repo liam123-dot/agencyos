@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link";
-import { Home, PanelLeft, Settings, Users, Box } from "lucide-react";
+import { Home, PanelLeft, Settings, Users, Box, BarChart3 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import {
   Sidebar,
@@ -34,6 +34,11 @@ const menuItems = [
     title: "Dashboard",
     url: "/app",
     icon: Home,
+  },
+  {
+    title: 'Analytics',
+    url: "/app/analytics",
+    icon: BarChart3,
   },
   {
     title: 'Clients',
