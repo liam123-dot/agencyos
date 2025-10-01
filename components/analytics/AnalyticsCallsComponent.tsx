@@ -130,12 +130,56 @@ const DATE_PRESET_LABELS: Record<DateRangePreset, string> = {
     allTime: "All time",
 };
 
+const CURRENCY_RATES: Record<string, number> = {
+    usd: 1.0,
+    eur: 0.92,
+    gbp: 0.79,
+    cad: 1.35,
+    aud: 1.52,
+    jpy: 149.0,
+    chf: 0.88,
+    nzd: 1.64,
+    sek: 10.5,
+    nok: 10.8,
+    dkk: 6.85,
+    pln: 3.95,
+    inr: 83.0,
+    brl: 4.95,
+    mxn: 17.0,
+    zar: 18.5,
+    sgd: 1.34,
+    hkd: 7.82,
+};
+
+const CURRENCY_OPTIONS = [
+    { value: 'ORIGINAL', label: 'Original Currency' },
+    { value: 'USD', label: 'USD ($)' },
+    { value: 'EUR', label: 'EUR (€)' },
+    { value: 'GBP', label: 'GBP (£)' },
+    { value: 'CAD', label: 'CAD ($)' },
+    { value: 'AUD', label: 'AUD ($)' },
+    { value: 'JPY', label: 'JPY (¥)' },
+    { value: 'CHF', label: 'CHF (Fr)' },
+    { value: 'NZD', label: 'NZD ($)' },
+    { value: 'SEK', label: 'SEK (kr)' },
+    { value: 'NOK', label: 'NOK (kr)' },
+    { value: 'DKK', label: 'DKK (kr)' },
+    { value: 'PLN', label: 'PLN (zł)' },
+    { value: 'INR', label: 'INR (₹)' },
+    { value: 'BRL', label: 'BRL (R$)' },
+    { value: 'MXN', label: 'MXN ($)' },
+    { value: 'ZAR', label: 'ZAR (R)' },
+    { value: 'SGD', label: 'SGD ($)' },
+    { value: 'HKD', label: 'HKD ($)' },
+];
+
 export function AnalyticsCallsComponent() {
     const router = useRouter();
     const pathname = usePathname();
     
     const [expandedCallId, setExpandedCallId] = useState<string | null>(null);
     const [decimalPlaces, setDecimalPlaces] = useState<number>(2);
+    const [displayCurrency, setDisplayCurrency] = useState<string>('USD');
     const [searchTerm, setSearchTerm] = useState<string>("");
     const [compactView, setCompactView] = useState<boolean>(false);
 
@@ -283,7 +327,22 @@ export function AnalyticsCallsComponent() {
         return `${mins.toLocaleString()}m`;
     };
 
-    const formatCurrency = (amount: number, currencyCode: string = 'USD', useCustomDecimals: boolean = true) => {
+    const convertCurrency = (amount: number, fromCurrency: string, toCurrency: string = displayCurrency) => {
+        if (fromCurrency.toLowerCase() === toCurrency.toLowerCase()) {
+            return amount;
+        }
+        
+        // Convert to USD first if not already
+        const usdAmount = fromCurrency.toLowerCase() === 'usd' 
+            ? amount 
+            : amount / (CURRENCY_RATES[fromCurrency.toLowerCase()] || 1);
+        
+        // Then convert to target currency
+        const targetRate = CURRENCY_RATES[toCurrency.toLowerCase()] || 1;
+        return usdAmount * targetRate;
+    };
+
+    const formatCurrency = (amount: number, currencyCode: string = displayCurrency, useCustomDecimals: boolean = true) => {
         const decimals = useCustomDecimals ? decimalPlaces : 2;
         try {
             return new Intl.NumberFormat('en-US', {
@@ -473,7 +532,7 @@ export function AnalyticsCallsComponent() {
     };
 
     const calls = analyticsData?.calls || [];
-    const totals = analyticsData?.totals || {
+    const totalsRaw = analyticsData?.totals || {
         totalCost: 0,
         totalRevenue: 0,
         totalMargin: 0,
@@ -481,6 +540,20 @@ export function AnalyticsCallsComponent() {
         averageMargin: 0,
         marginPercentage: 0
     };
+    
+    // Convert totals to display currency (backend sends in USD)
+    // When "ORIGINAL" is selected, keep in USD for totals since we can't mix currencies
+    const effectiveDisplayCurrency = displayCurrency === 'ORIGINAL' ? 'USD' : displayCurrency;
+    
+    const totals = useMemo(() => ({
+        totalCost: convertCurrency(totalsRaw.totalCost, 'USD', effectiveDisplayCurrency),
+        totalRevenue: convertCurrency(totalsRaw.totalRevenue, 'USD', effectiveDisplayCurrency),
+        totalMargin: convertCurrency(totalsRaw.totalMargin, 'USD', effectiveDisplayCurrency),
+        totalCalls: totalsRaw.totalCalls,
+        averageMargin: convertCurrency(totalsRaw.averageMargin, 'USD', effectiveDisplayCurrency),
+        marginPercentage: totalsRaw.marginPercentage
+    }), [totalsRaw, effectiveDisplayCurrency]);
+    
     const filters = analyticsData?.filters || { clients: [], agents: [] };
 
     const filteredCalls = useMemo(() => {
@@ -512,8 +585,22 @@ export function AnalyticsCallsComponent() {
     // Calculate additional metrics
     const totalSeconds = appliedCalls.reduce((sum: number, call: CallWithAnalytics) => sum + call.seconds, 0);
     const avgCallDuration = appliedCalls.length > 0 ? totalSeconds / appliedCalls.length : 0;
-    const costPerMinute = totalSeconds > 0 ? (totals.totalCost / (totalSeconds / 60)) : 0;
-    const revenuePerMinute = totalSeconds > 0 ? (totals.totalRevenue / (totalSeconds / 60)) : 0;
+    
+    // Calculate cost and revenue per minute in display currency
+    const costPerMinute = useMemo(() => {
+        if (totalSeconds === 0) return 0;
+        return totals.totalCost / (totalSeconds / 60);
+    }, [totalSeconds, totals.totalCost]);
+    
+    const revenuePerMinute = useMemo(() => {
+        if (totalSeconds === 0) return 0;
+        return totals.totalRevenue / (totalSeconds / 60);
+    }, [totalSeconds, totals.totalRevenue]);
+    
+    const marginPerMinute = useMemo(() => {
+        if (totalSeconds === 0) return 0;
+        return totals.totalMargin / (totalSeconds / 60);
+    }, [totalSeconds, totals.totalMargin]);
 
     // Filter agents based on selected client
     const availableAgents = clientFilter !== 'all' 
@@ -563,6 +650,26 @@ export function AnalyticsCallsComponent() {
                                 )}
                             </div>
                             <div className="flex items-center gap-3 flex-wrap">
+                                <div className="flex items-center gap-2">
+                                    <Label htmlFor="display-currency" className="text-xs text-muted-foreground whitespace-nowrap">
+                                        Currency:
+                                    </Label>
+                                    <Select
+                                        value={displayCurrency}
+                                        onValueChange={setDisplayCurrency}
+                                    >
+                                        <SelectTrigger id="display-currency" className="h-8 w-[110px] text-xs">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {CURRENCY_OPTIONS.map((currency) => (
+                                                <SelectItem key={currency.value} value={currency.value}>
+                                                    {currency.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                                 <div className="flex items-center gap-2">
                                     <Label htmlFor="decimal-places" className="text-xs text-muted-foreground whitespace-nowrap">
                                         Precision:
@@ -789,10 +896,18 @@ export function AnalyticsCallsComponent() {
                         <DollarSign className="h-4 w-4 text-emerald-600" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-emerald-600">{formatCurrency(totals.totalRevenue, 'USD')}</div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                            {formatCurrency(revenuePerMinute, 'USD')}/min
-                        </p>
+                        <div className="text-2xl font-bold text-emerald-600">{formatCurrency(totals.totalRevenue, effectiveDisplayCurrency)}</div>
+                        <div className="flex flex-col gap-0.5 mt-1">
+                            <p className="text-xs text-muted-foreground">
+                                {formatCurrency(revenuePerMinute, effectiveDisplayCurrency)}/min
+                                {displayCurrency === 'ORIGINAL' && <span className="ml-1">(USD totals)</span>}
+                            </p>
+                            {effectiveDisplayCurrency.toLowerCase() !== 'usd' && displayCurrency !== 'ORIGINAL' && (
+                                <p className="text-xs text-slate-400">
+                                    {formatCurrency(totalsRaw.totalRevenue, 'USD')} USD
+                                </p>
+                            )}
+                        </div>
                     </CardContent>
                 </Card>
                 
@@ -802,10 +917,18 @@ export function AnalyticsCallsComponent() {
                         <DollarSign className="h-4 w-4 text-rose-600" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-rose-600">{formatCurrency(totals.totalCost, 'USD')}</div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                            {formatCurrency(costPerMinute, 'USD')}/min
-                        </p>
+                        <div className="text-2xl font-bold text-rose-600">{formatCurrency(totals.totalCost, effectiveDisplayCurrency)}</div>
+                        <div className="flex flex-col gap-0.5 mt-1">
+                            <p className="text-xs text-muted-foreground">
+                                {formatCurrency(costPerMinute, effectiveDisplayCurrency)}/min
+                                {displayCurrency === 'ORIGINAL' && <span className="ml-1">(USD totals)</span>}
+                            </p>
+                            {effectiveDisplayCurrency.toLowerCase() !== 'usd' && displayCurrency !== 'ORIGINAL' && (
+                                <p className="text-xs text-slate-400">
+                                    {formatCurrency(totalsRaw.totalCost, 'USD')} USD
+                                </p>
+                            )}
+                        </div>
                     </CardContent>
                 </Card>
                 
@@ -816,11 +939,19 @@ export function AnalyticsCallsComponent() {
                     </CardHeader>
                     <CardContent>
                         <div className={cn("text-2xl font-bold", getMarginStyles(totals.totalMargin))}>
-                            {formatCurrency(totals.totalMargin, 'USD')}
+                            {formatCurrency(totals.totalMargin, effectiveDisplayCurrency)}
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                            {totals.marginPercentage.toFixed(1)}% margin
-                        </p>
+                        <div className="flex flex-col gap-0.5 mt-1">
+                            <p className="text-xs text-muted-foreground">
+                                {totals.marginPercentage.toFixed(1)}% margin · {formatCurrency(marginPerMinute, effectiveDisplayCurrency)}/min
+                                {displayCurrency === 'ORIGINAL' && <span className="ml-1">(USD totals)</span>}
+                            </p>
+                            {effectiveDisplayCurrency.toLowerCase() !== 'usd' && displayCurrency !== 'ORIGINAL' && (
+                                <p className="text-xs text-slate-400">
+                                    {formatCurrency(totalsRaw.totalMargin, 'USD')} USD
+                                </p>
+                            )}
+                        </div>
                     </CardContent>
                 </Card>
             </div>
@@ -968,9 +1099,28 @@ export function AnalyticsCallsComponent() {
                                                     <TableCell className={cn("text-sm text-right", compactView ? "py-2" : "py-4")}>
                                                         <div className="flex items-center justify-end gap-2">
                                                             <div className="flex flex-col items-end">
-                                                                <span className="text-rose-600 font-medium">{formatCurrency(call.costInLocalCurrency, call.currency)}</span>
-                                                                {!compactView && call.currency.toLowerCase() !== 'usd' && (
-                                                                    <span className="text-xs text-slate-400">{formatCurrency(call.cost, 'USD')}</span>
+                                                                {displayCurrency === 'ORIGINAL' ? (
+                                                                    <>
+                                                                        <span className="text-rose-600 font-medium">
+                                                                            {formatCurrency(call.costInLocalCurrency, call.currency)}
+                                                                        </span>
+                                                                        {!compactView && call.currency.toLowerCase() !== 'usd' && (
+                                                                            <span className="text-xs text-slate-400">
+                                                                                {formatCurrency(call.cost, 'USD')} USD
+                                                                            </span>
+                                                                        )}
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <span className="text-rose-600 font-medium">
+                                                                            {formatCurrency(convertCurrency(call.costInLocalCurrency, call.currency, displayCurrency), displayCurrency)}
+                                                                        </span>
+                                                                        {!compactView && call.currency.toLowerCase() !== displayCurrency.toLowerCase() && (
+                                                                            <span className="text-xs text-slate-400">
+                                                                                {formatCurrency(call.costInLocalCurrency, call.currency)} orig
+                                                                            </span>
+                                                                        )}
+                                                                    </>
                                                                 )}
                                                             </div>
                                                             {!compactView && call.data?.costs && call.data.costs.length > 0 && (
@@ -991,10 +1141,58 @@ export function AnalyticsCallsComponent() {
                                                         </div>
                                                     </TableCell>
                                                     <TableCell className={cn("text-sm text-right", compactView ? "py-2" : "py-4")}>
-                                                        <span className="text-emerald-600 font-medium">{formatCurrency(call.revenue, call.currency)}</span>
+                                                        <div className="flex flex-col items-end">
+                                                            {displayCurrency === 'ORIGINAL' ? (
+                                                                <>
+                                                                    <span className="text-emerald-600 font-medium">
+                                                                        {formatCurrency(call.revenue, call.currency)}
+                                                                    </span>
+                                                                    {!compactView && call.currency.toLowerCase() !== 'usd' && (
+                                                                        <span className="text-xs text-slate-400">
+                                                                            {formatCurrency(convertCurrency(call.revenue, call.currency, 'USD'), 'USD')} USD
+                                                                        </span>
+                                                                    )}
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <span className="text-emerald-600 font-medium">
+                                                                        {formatCurrency(convertCurrency(call.revenue, call.currency, displayCurrency), displayCurrency)}
+                                                                    </span>
+                                                                    {!compactView && call.currency.toLowerCase() !== displayCurrency.toLowerCase() && (
+                                                                        <span className="text-xs text-slate-400">
+                                                                            {formatCurrency(call.revenue, call.currency)} orig
+                                                                        </span>
+                                                                    )}
+                                                                </>
+                                                            )}
+                                                        </div>
                                                     </TableCell>
                                                     <TableCell className={cn("text-sm text-right", compactView ? "py-2" : "py-4")}>
-                                                        <span className={getMarginStyles(call.margin)}>{formatCurrency(call.margin, call.currency)}</span>
+                                                        <div className="flex flex-col items-end">
+                                                            {displayCurrency === 'ORIGINAL' ? (
+                                                                <>
+                                                                    <span className={getMarginStyles(call.margin)}>
+                                                                        {formatCurrency(call.margin, call.currency)}
+                                                                    </span>
+                                                                    {!compactView && call.currency.toLowerCase() !== 'usd' && (
+                                                                        <span className="text-xs text-slate-400">
+                                                                            {formatCurrency(convertCurrency(call.margin, call.currency, 'USD'), 'USD')} USD
+                                                                        </span>
+                                                                    )}
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <span className={getMarginStyles(call.margin)}>
+                                                                        {formatCurrency(convertCurrency(call.margin, call.currency, displayCurrency), displayCurrency)}
+                                                                    </span>
+                                                                    {!compactView && call.currency.toLowerCase() !== displayCurrency.toLowerCase() && (
+                                                                        <span className="text-xs text-slate-400">
+                                                                            {formatCurrency(call.margin, call.currency)} orig
+                                                                        </span>
+                                                                    )}
+                                                                </>
+                                                            )}
+                                                        </div>
                                                     </TableCell>
                                                     <TableCell className={cn("text-right", compactView ? "py-2" : "py-4")}>
                                                         {!compactView && (
