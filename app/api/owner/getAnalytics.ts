@@ -28,10 +28,41 @@ interface CallWithAnalytics {
         per_second_price_cents: number;
         base_amount_cents: number;
         minutes_included: number;
+        currency: string;
     } | null;
     cost: number;
     revenue: number;
     margin: number;
+    costInLocalCurrency: number;
+    currency: string;
+}
+
+// Approximate currency conversion rates (USD to target currency)
+const CURRENCY_RATES: Record<string, number> = {
+    'usd': 1.0,
+    'eur': 0.92,
+    'gbp': 0.79,
+    'cad': 1.35,
+    'aud': 1.52,
+    'jpy': 149.0,
+    'chf': 0.88,
+    'nzd': 1.64,
+    'sek': 10.5,
+    'nok': 10.8,
+    'dkk': 6.85,
+    'pln': 3.95,
+    'inr': 83.0,
+    'brl': 4.95,
+    'mxn': 17.0,
+    'zar': 18.5,
+    'sgd': 1.34,
+    'hkd': 7.82,
+};
+
+function convertUsdToCurrency(usdAmount: number, targetCurrency: string): number {
+    const currency = targetCurrency?.toLowerCase() || 'usd';
+    const rate = CURRENCY_RATES[currency] || 1.0;
+    return usdAmount * rate;
 }
 
 export async function getAnalytics() {
@@ -87,43 +118,55 @@ export async function getAnalytics() {
     const callsWithAnalytics: CallWithAnalytics[] = (callsData || []).map(call => {
         const subscription = subscriptionMap.get(call.client_id);
         
-        // Cost from Vapi (what we pay)
-        const cost = call.data?.cost || 0;
+        // Cost from Vapi (always in USD)
+        const costUsd = call.data?.cost || 0;
         
-        // Revenue calculation (what client pays us)
+        // Get currency from subscription (default to USD)
+        const currency = subscription?.currency?.toLowerCase() || 'usd';
+        
+        // Convert cost to local currency
+        const costInLocalCurrency = convertUsdToCurrency(costUsd, currency);
+        
+        // Revenue calculation (what client pays us in their currency)
         let revenue = 0;
         if (subscription && subscription.per_second_price_cents) {
-            // Convert per_second_price_cents to dollars and multiply by seconds
+            // per_second_price_cents is already in the subscription's currency
             revenue = (subscription.per_second_price_cents * call.seconds) / 100;
         }
         
-        // Margin = Revenue - Cost
-        const margin = revenue - cost;
+        // Margin = Revenue - Cost (both in local currency)
+        const margin = revenue - costInLocalCurrency;
 
         return {
             ...call,
             subscriptions: subscription || null,
-            cost,
+            cost: costUsd,
             revenue,
-            margin
+            margin,
+            costInLocalCurrency,
+            currency
         };
     });
 
-    // Calculate totals
-    const totalCost = callsWithAnalytics.reduce((sum, call) => sum + call.cost, 0);
-    const totalRevenue = callsWithAnalytics.reduce((sum, call) => sum + call.revenue, 0);
-    const totalMargin = callsWithAnalytics.reduce((sum, call) => sum + call.margin, 0);
+    // Calculate totals (in USD for aggregation, since we may have mixed currencies)
+    const totalCostUsd = callsWithAnalytics.reduce((sum, call) => sum + call.cost, 0);
+    const totalRevenueUsd = callsWithAnalytics.reduce((sum, call) => {
+        // Convert revenue back to USD for totals
+        const revenueUsd = call.revenue / (CURRENCY_RATES[call.currency] || 1.0);
+        return sum + revenueUsd;
+    }, 0);
+    const totalMarginUsd = totalRevenueUsd - totalCostUsd;
     const totalCalls = callsWithAnalytics.length;
 
     return {
         calls: callsWithAnalytics,
         totals: {
-            totalCost,
-            totalRevenue,
-            totalMargin,
+            totalCost: totalCostUsd,
+            totalRevenue: totalRevenueUsd,
+            totalMargin: totalMarginUsd,
             totalCalls,
-            averageMargin: totalCalls > 0 ? totalMargin / totalCalls : 0,
-            marginPercentage: totalRevenue > 0 ? (totalMargin / totalRevenue) * 100 : 0
+            averageMargin: totalCalls > 0 ? totalMarginUsd / totalCalls : 0,
+            marginPercentage: totalRevenueUsd > 0 ? (totalMarginUsd / totalRevenueUsd) * 100 : 0
         }
     };
 }

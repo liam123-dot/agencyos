@@ -35,6 +35,7 @@ interface Subscription {
     per_second_price_cents: number;
     base_amount_cents: number;
     minutes_included: number;
+    currency: string;
 }
 
 interface CallWithAnalytics {
@@ -52,6 +53,8 @@ interface CallWithAnalytics {
     cost: number;
     revenue: number;
     margin: number;
+    costInLocalCurrency: number;
+    currency: string;
 }
 
 interface AnalyticsData {
@@ -79,13 +82,23 @@ export function AnalyticsCallsComponent({ analyticsData }: AnalyticsCallsCompone
         return `${mins}m ${secs}s`;
     };
 
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'USD',
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        }).format(amount);
+    const formatCurrency = (amount: number, currencyCode: string = 'USD') => {
+        try {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: currencyCode.toUpperCase(),
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(amount);
+        } catch (error) {
+            // Fallback if currency code is invalid
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(amount);
+        }
     };
 
     const getAgentName = (agent: Agent | null) => {
@@ -219,7 +232,8 @@ export function AnalyticsCallsComponent({ analyticsData }: AnalyticsCallsCompone
                         <DollarSign className="h-4 w-4 text-emerald-600" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-emerald-600">{formatCurrency(totals.totalRevenue)}</div>
+                        <div className="text-2xl font-bold text-emerald-600">{formatCurrency(totals.totalRevenue, 'USD')}</div>
+                        <p className="text-xs text-muted-foreground mt-1">USD equivalent</p>
                     </CardContent>
                 </Card>
                 
@@ -229,7 +243,8 @@ export function AnalyticsCallsComponent({ analyticsData }: AnalyticsCallsCompone
                         <DollarSign className="h-4 w-4 text-rose-600" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-rose-600">{formatCurrency(totals.totalCost)}</div>
+                        <div className="text-2xl font-bold text-rose-600">{formatCurrency(totals.totalCost, 'USD')}</div>
+                        <p className="text-xs text-muted-foreground mt-1">Vapi charges (USD)</p>
                     </CardContent>
                 </Card>
                 
@@ -240,7 +255,7 @@ export function AnalyticsCallsComponent({ analyticsData }: AnalyticsCallsCompone
                     </CardHeader>
                     <CardContent>
                         <div className={cn("text-2xl font-bold", getMarginStyles(totals.totalMargin))}>
-                            {formatCurrency(totals.totalMargin)}
+                            {formatCurrency(totals.totalMargin, 'USD')}
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
                             {totals.marginPercentage.toFixed(1)}% margin
@@ -354,13 +369,18 @@ export function AnalyticsCallsComponent({ analyticsData }: AnalyticsCallsCompone
                                                 </TableCell>
                                                 <TableCell className="px-4 text-sm text-slate-600 align-middle">{duration}</TableCell>
                                                 <TableCell className="px-4 text-sm text-slate-600 align-middle text-right">
-                                                    <span className="text-rose-600 font-medium">{formatCurrency(call.cost)}</span>
+                                                    <div className="flex flex-col items-end">
+                                                        <span className="text-rose-600 font-medium">{formatCurrency(call.costInLocalCurrency, call.currency)}</span>
+                                                        {call.currency.toLowerCase() !== 'usd' && (
+                                                            <span className="text-xs text-slate-400">{formatCurrency(call.cost, 'USD')}</span>
+                                                        )}
+                                                    </div>
                                                 </TableCell>
                                                 <TableCell className="px-4 text-sm text-slate-600 align-middle text-right">
-                                                    <span className="text-emerald-600 font-medium">{formatCurrency(call.revenue)}</span>
+                                                    <span className="text-emerald-600 font-medium">{formatCurrency(call.revenue, call.currency)}</span>
                                                 </TableCell>
                                                 <TableCell className="px-4 text-sm align-middle text-right">
-                                                    <span className={getMarginStyles(call.margin)}>{formatCurrency(call.margin)}</span>
+                                                    <span className={getMarginStyles(call.margin)}>{formatCurrency(call.margin, call.currency)}</span>
                                                 </TableCell>
                                                 <TableCell className="px-6 text-right align-middle">
                                                     <Button
@@ -397,7 +417,7 @@ export function AnalyticsCallsComponent({ analyticsData }: AnalyticsCallsCompone
                                                                 </Badge>
                                                                 {call.subscriptions ? (
                                                                     <Badge variant="secondary" className="rounded-full bg-emerald-100 text-[11px] font-medium uppercase tracking-wide text-emerald-700">
-                                                                        ${(call.subscriptions.per_second_price_cents / 100).toFixed(4)}/sec
+                                                                        {formatCurrency((call.subscriptions.per_second_price_cents / 100), call.currency)}/sec
                                                                     </Badge>
                                                                 ) : (
                                                                     <Badge variant="secondary" className="rounded-full bg-amber-100 text-[11px] font-medium uppercase tracking-wide text-amber-700">
@@ -448,21 +468,29 @@ export function AnalyticsCallsComponent({ analyticsData }: AnalyticsCallsCompone
                                                                     <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
                                                                         <dl className="space-y-3">
                                                                             <div className="flex items-center justify-between gap-4 pb-2 border-b border-slate-100">
-                                                                                <dt className="text-xs text-slate-500">Vapi Cost</dt>
+                                                                                <dt className="text-xs text-slate-500">Vapi Cost ({call.currency.toUpperCase()})</dt>
                                                                                 <dd className="text-sm font-semibold text-rose-600">
-                                                                                    {formatCurrency(call.cost)}
+                                                                                    {formatCurrency(call.costInLocalCurrency, call.currency)}
                                                                                 </dd>
                                                                             </div>
+                                                                            {call.currency.toLowerCase() !== 'usd' && (
+                                                                                <div className="flex items-center justify-between gap-4 pb-2 border-b border-slate-100">
+                                                                                    <dt className="text-xs text-slate-400">Vapi Cost (USD)</dt>
+                                                                                    <dd className="text-xs text-slate-400">
+                                                                                        {formatCurrency(call.cost, 'USD')}
+                                                                                    </dd>
+                                                                                </div>
+                                                                            )}
                                                                             <div className="flex items-center justify-between gap-4 pb-2 border-b border-slate-100">
-                                                                                <dt className="text-xs text-slate-500">Client Revenue</dt>
+                                                                                <dt className="text-xs text-slate-500">Client Revenue ({call.currency.toUpperCase()})</dt>
                                                                                 <dd className="text-sm font-semibold text-emerald-600">
-                                                                                    {formatCurrency(call.revenue)}
+                                                                                    {formatCurrency(call.revenue, call.currency)}
                                                                                 </dd>
                                                                             </div>
                                                                             <div className="flex items-center justify-between gap-4 pt-1">
-                                                                                <dt className="text-xs font-bold text-slate-700">Profit Margin</dt>
+                                                                                <dt className="text-xs font-bold text-slate-700">Profit Margin ({call.currency.toUpperCase()})</dt>
                                                                                 <dd className={cn("text-base font-bold", getMarginStyles(call.margin))}>
-                                                                                    {formatCurrency(call.margin)}
+                                                                                    {formatCurrency(call.margin, call.currency)}
                                                                                 </dd>
                                                                             </div>
                                                                         </dl>
