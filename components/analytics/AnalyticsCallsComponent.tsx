@@ -1,7 +1,7 @@
 'use client'
 
 import { Fragment, useState } from "react";
-import { Phone, ChevronRight, TrendingUp, DollarSign, Percent } from "lucide-react";
+import { Phone, ChevronRight, TrendingUp, DollarSign, Eye } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -16,6 +16,19 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 interface Agent {
     id: string;
@@ -75,6 +88,7 @@ interface AnalyticsCallsComponentProps {
 
 export function AnalyticsCallsComponent({ analyticsData }: AnalyticsCallsComponentProps) {
     const [expandedCallId, setExpandedCallId] = useState<string | null>(null);
+    const [decimalPlaces, setDecimalPlaces] = useState<number>(2);
 
     const formatDuration = (seconds: number) => {
         const mins = Math.floor(seconds / 60);
@@ -82,23 +96,89 @@ export function AnalyticsCallsComponent({ analyticsData }: AnalyticsCallsCompone
         return `${mins}m ${secs}s`;
     };
 
-    const formatCurrency = (amount: number, currencyCode: string = 'USD') => {
+    const formatCurrency = (amount: number, currencyCode: string = 'USD', useCustomDecimals: boolean = true) => {
+        const decimals = useCustomDecimals ? decimalPlaces : 2;
         try {
             return new Intl.NumberFormat('en-US', {
                 style: 'currency',
                 currency: currencyCode.toUpperCase(),
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
+                minimumFractionDigits: decimals,
+                maximumFractionDigits: decimals
             }).format(amount);
         } catch (error) {
             // Fallback if currency code is invalid
             return new Intl.NumberFormat('en-US', {
                 style: 'currency',
                 currency: 'USD',
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
+                minimumFractionDigits: decimals,
+                maximumFractionDigits: decimals
             }).format(amount);
         }
+    };
+
+    const CostBreakdown = ({ costs, currency }: { costs: any[], currency: string }) => {
+        if (!costs || costs.length === 0) {
+            return <p className="text-xs text-slate-500">No cost breakdown available</p>;
+        }
+
+        const getCostTypeLabel = (costItem: any) => {
+            switch (costItem.type) {
+                case 'transcriber':
+                    return `Transcription (${costItem.transcriber?.provider || 'unknown'})`;
+                case 'model':
+                    return `LLM (${costItem.model?.model || 'unknown'})`;
+                case 'voice':
+                    return `Voice (${costItem.voice?.provider || 'unknown'})`;
+                case 'vapi':
+                    return 'Vapi Platform';
+                case 'analysis':
+                    return `Analysis (${costItem.analysisType || 'unknown'})`;
+                case 'knowledge-base':
+                    return 'Knowledge Base';
+                default:
+                    return costItem.type || 'Other';
+            }
+        };
+
+        const getCostDetails = (costItem: any) => {
+            const details: string[] = [];
+            if (costItem.minutes) details.push(`${costItem.minutes.toFixed(2)} min`);
+            if (costItem.characters) details.push(`${costItem.characters} chars`);
+            if (costItem.promptTokens) details.push(`${costItem.promptTokens} prompt tokens`);
+            if (costItem.completionTokens) details.push(`${costItem.completionTokens} completion tokens`);
+            return details.length > 0 ? details.join(', ') : null;
+        };
+
+        return (
+            <div className="space-y-2 min-w-[300px]">
+                <h4 className="text-sm font-semibold text-slate-900 mb-3">Cost Breakdown</h4>
+                <div className="space-y-2">
+                    {costs.map((costItem, index) => (
+                        <div key={index} className="flex justify-between items-start gap-4 pb-2 border-b border-slate-100 last:border-0">
+                            <div className="flex-1">
+                                <p className="text-xs font-medium text-slate-700">
+                                    {getCostTypeLabel(costItem)}
+                                </p>
+                                {getCostDetails(costItem) && (
+                                    <p className="text-[10px] text-slate-500 mt-0.5">
+                                        {getCostDetails(costItem)}
+                                    </p>
+                                )}
+                            </div>
+                            <span className="text-xs font-semibold text-slate-900 whitespace-nowrap">
+                                {formatCurrency(costItem.cost, currency)}
+                            </span>
+                        </div>
+                    ))}
+                </div>
+                <div className="flex justify-between items-center pt-2 border-t-2 border-slate-200">
+                    <span className="text-sm font-bold text-slate-900">Total</span>
+                    <span className="text-sm font-bold text-slate-900">
+                        {formatCurrency(costs.reduce((sum, c) => sum + (c.cost || 0), 0), currency)}
+                    </span>
+                </div>
+            </div>
+        );
     };
 
     const getAgentName = (agent: Agent | null) => {
@@ -214,6 +294,36 @@ export function AnalyticsCallsComponent({ analyticsData }: AnalyticsCallsCompone
 
     return (
         <div className="space-y-6">
+            {/* Header with Precision Control */}
+            <div className="flex items-start justify-between gap-4">
+                <div className="space-y-2">
+                    <h1 className="text-3xl font-bold tracking-tight">Analytics Dashboard</h1>
+                    <p className="text-muted-foreground">
+                        Monitor call performance, costs, and profit margins across all clients
+                    </p>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Label htmlFor="decimal-places" className="text-xs text-muted-foreground whitespace-nowrap">
+                        Precision:
+                    </Label>
+                    <Select
+                        value={decimalPlaces.toString()}
+                        onValueChange={(value) => setDecimalPlaces(parseInt(value))}
+                    >
+                        <SelectTrigger id="decimal-places" className="h-8 w-[100px] text-xs">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="2">2 decimals</SelectItem>
+                            <SelectItem value="3">3 decimals</SelectItem>
+                            <SelectItem value="4">4 decimals</SelectItem>
+                            <SelectItem value="5">5 decimals</SelectItem>
+                            <SelectItem value="6">6 decimals</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+            </div>
+
             {/* Summary Cards */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card>
@@ -369,10 +479,28 @@ export function AnalyticsCallsComponent({ analyticsData }: AnalyticsCallsCompone
                                                 </TableCell>
                                                 <TableCell className="px-4 text-sm text-slate-600 align-middle">{duration}</TableCell>
                                                 <TableCell className="px-4 text-sm text-slate-600 align-middle text-right">
-                                                    <div className="flex flex-col items-end">
-                                                        <span className="text-rose-600 font-medium">{formatCurrency(call.costInLocalCurrency, call.currency)}</span>
-                                                        {call.currency.toLowerCase() !== 'usd' && (
-                                                            <span className="text-xs text-slate-400">{formatCurrency(call.cost, 'USD')}</span>
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        <div className="flex flex-col items-end">
+                                                            <span className="text-rose-600 font-medium">{formatCurrency(call.costInLocalCurrency, call.currency)}</span>
+                                                            {call.currency.toLowerCase() !== 'usd' && (
+                                                                <span className="text-xs text-slate-400">{formatCurrency(call.cost, 'USD')}</span>
+                                                            )}
+                                                        </div>
+                                                        {call.data?.costs && call.data.costs.length > 0 && (
+                                                            <Popover>
+                                                                <PopoverTrigger asChild>
+                                                                    <button
+                                                                        onClick={(e) => e.stopPropagation()}
+                                                                        className="p-1 hover:bg-slate-100 rounded transition-colors"
+                                                                        aria-label="View cost breakdown"
+                                                                    >
+                                                                        <Eye className="h-4 w-4 text-slate-400 hover:text-slate-600" />
+                                                                    </button>
+                                                                </PopoverTrigger>
+                                                                <PopoverContent align="end" className="w-auto p-4">
+                                                                    <CostBreakdown costs={call.data.costs} currency={call.currency} />
+                                                                </PopoverContent>
+                                                            </Popover>
                                                         )}
                                                     </div>
                                                 </TableCell>
@@ -468,7 +596,25 @@ export function AnalyticsCallsComponent({ analyticsData }: AnalyticsCallsCompone
                                                                     <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
                                                                         <dl className="space-y-3">
                                                                             <div className="flex items-center justify-between gap-4 pb-2 border-b border-slate-100">
-                                                                                <dt className="text-xs text-slate-500">Vapi Cost ({call.currency.toUpperCase()})</dt>
+                                                                                <dt className="text-xs text-slate-500 flex items-center gap-2">
+                                                                                    Vapi Cost ({call.currency.toUpperCase()})
+                                                                                    {call.data?.costs && call.data.costs.length > 0 && (
+                                                                                        <Popover>
+                                                                                            <PopoverTrigger asChild>
+                                                                                                <button
+                                                                                                    onClick={(e) => e.stopPropagation()}
+                                                                                                    className="p-0.5 hover:bg-slate-100 rounded transition-colors"
+                                                                                                    aria-label="View cost breakdown"
+                                                                                                >
+                                                                                                    <Eye className="h-3.5 w-3.5 text-slate-400 hover:text-slate-600" />
+                                                                                                </button>
+                                                                                            </PopoverTrigger>
+                                                                                            <PopoverContent align="start" className="w-auto p-4">
+                                                                                                <CostBreakdown costs={call.data.costs} currency={call.currency} />
+                                                                                            </PopoverContent>
+                                                                                        </Popover>
+                                                                                    )}
+                                                                                </dt>
                                                                                 <dd className="text-sm font-semibold text-rose-600">
                                                                                     {formatCurrency(call.costInLocalCurrency, call.currency)}
                                                                                 </dd>
