@@ -551,68 +551,58 @@ export function AnalyticsCallsComponent() {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
-            <div className="flex items-start justify-between gap-4 flex-wrap">
-                <div className="space-y-2">
-                    <div className="flex items-center gap-3">
-                        <h1 className="text-3xl font-bold tracking-tight">Analytics Dashboard</h1>
-                        {isLoading && (
-                            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                        )}
-                    </div>
-                    <p className="text-muted-foreground">
-                        Monitor call performance, costs, and profit margins across all clients
-                    </p>
-                </div>
-                <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2">
-                        <Label htmlFor="decimal-places" className="text-xs text-muted-foreground whitespace-nowrap">
-                            Precision:
-                        </Label>
-                        <Select
-                            value={decimalPlaces.toString()}
-                            onValueChange={(value) => setDecimalPlaces(parseInt(value))}
-                        >
-                            <SelectTrigger id="decimal-places" className="h-9 w-[110px] text-xs">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="2">2 decimals</SelectItem>
-                                <SelectItem value="3">3 decimals</SelectItem>
-                                <SelectItem value="4">4 decimals</SelectItem>
-                                <SelectItem value="5">5 decimals</SelectItem>
-                                <SelectItem value="6">6 decimals</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <Button
-                        variant={compactView ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setCompactView(!compactView)}
-                        className="gap-2"
-                    >
-                        <BarChart3 className="h-4 w-4" />
-                        {compactView ? "Default" : "Compact"}
-                    </Button>
-                </div>
-            </div>
-
-            {/* Quick Date Presets */}
+            {/* Filters Card */}
             <Card>
                 <CardContent className="pt-6">
                     <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <Label className="text-sm font-medium">Quick Date Range</Label>
-                            {hasActiveFilters && (
+                        <div className="flex items-center justify-between gap-4 flex-wrap">
+                            <div className="flex items-center gap-3">
+                                <Label className="text-sm font-medium">Quick Date Range</Label>
+                                {isLoading && (
+                                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                )}
+                            </div>
+                            <div className="flex items-center gap-3 flex-wrap">
+                                <div className="flex items-center gap-2">
+                                    <Label htmlFor="decimal-places" className="text-xs text-muted-foreground whitespace-nowrap">
+                                        Precision:
+                                    </Label>
+                                    <Select
+                                        value={decimalPlaces.toString()}
+                                        onValueChange={(value) => setDecimalPlaces(parseInt(value))}
+                                    >
+                                        <SelectTrigger id="decimal-places" className="h-8 w-[110px] text-xs">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="2">2 decimals</SelectItem>
+                                            <SelectItem value="3">3 decimals</SelectItem>
+                                            <SelectItem value="4">4 decimals</SelectItem>
+                                            <SelectItem value="5">5 decimals</SelectItem>
+                                            <SelectItem value="6">6 decimals</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                                 <Button
-                                    variant="ghost"
+                                    variant={compactView ? "default" : "outline"}
                                     size="sm"
-                                    onClick={clearAllFilters}
-                                    className="h-8 text-xs"
+                                    onClick={() => setCompactView(!compactView)}
+                                    className="gap-2 h-8"
                                 >
-                                    Clear all filters
+                                    <BarChart3 className="h-4 w-4" />
+                                    {compactView ? "Default" : "Compact"}
                                 </Button>
-                            )}
+                                {hasActiveFilters && (
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={clearAllFilters}
+                                        className="h-8 text-xs"
+                                    >
+                                        Clear all filters
+                                    </Button>
+                                )}
+                            </div>
                         </div>
                         <Tabs value={datePreset} onValueChange={(v) => applyDatePreset(v as DateRangePreset)}>
                             <TabsList className="grid w-full grid-cols-7 h-auto">
