@@ -65,15 +65,22 @@ function convertUsdToCurrency(usdAmount: number, targetCurrency: string): number
     return usdAmount * rate;
 }
 
-export async function getAnalytics() {
+interface GetAnalyticsParams {
+    clientId?: string;
+    agentId?: string;
+    startDate?: string;
+    endDate?: string;
+}
+
+export async function getAnalytics(params?: GetAnalyticsParams) {
     const { organization, userData, supabaseServerClient } = await getOrg()
 
     if (!organization) {
         throw new Error('Organization not found')
     }
 
-    // Fetch all calls for the organization with client and subscription data
-    const { data: callsData, error } = await supabaseServerClient
+    // Build the query with filters
+    let query = supabaseServerClient
         .from('calls')
         .select(`
             *,
@@ -88,9 +95,29 @@ export async function getAnalytics() {
                 name
             )
         `)
-        .eq('organization_id', organization.id)
+        .eq('organization_id', organization.id);
+
+    // Apply filters
+    if (params?.clientId) {
+        query = query.eq('client_id', params.clientId);
+    }
+
+    if (params?.agentId) {
+        query = query.eq('agent_id', params.agentId);
+    }
+
+    if (params?.startDate) {
+        query = query.gte('created_at', params.startDate);
+    }
+
+    if (params?.endDate) {
+        query = query.lte('created_at', params.endDate);
+    }
+
+    // Apply ordering and limit
+    const { data: callsData, error } = await query
         .order('created_at', { ascending: false })
-        .limit(100);
+        .limit(1000);
 
     if (error) {
         console.error('Error fetching calls:', error);
@@ -158,6 +185,19 @@ export async function getAnalytics() {
     const totalMarginUsd = totalRevenueUsd - totalCostUsd;
     const totalCalls = callsWithAnalytics.length;
 
+    // Fetch all unique clients and agents for filters
+    const { data: allClients } = await supabaseServerClient
+        .from('clients')
+        .select('id, name')
+        .eq('organization_id', organization.id)
+        .order('name');
+
+    const { data: allAgents } = await supabaseServerClient
+        .from('agents')
+        .select('id, platform_id, platform, data, client_id')
+        .eq('organization_id', organization.id)
+        .order('created_at', { ascending: false });
+
     return {
         calls: callsWithAnalytics,
         totals: {
@@ -167,6 +207,10 @@ export async function getAnalytics() {
             totalCalls,
             averageMargin: totalCalls > 0 ? totalMarginUsd / totalCalls : 0,
             marginPercentage: totalRevenueUsd > 0 ? (totalMarginUsd / totalRevenueUsd) * 100 : 0
+        },
+        filters: {
+            clients: allClients || [],
+            agents: allAgents || []
         }
     };
 }
