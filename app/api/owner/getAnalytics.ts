@@ -111,7 +111,13 @@ export async function getAnalytics(params?: GetAnalyticsParams) {
     }
 
     if (params?.endDate) {
-        query = query.lte('created_at', params.endDate);
+        // If endDate is at midnight (start of day), adjust to end of day
+        // to include all calls from that day
+        const endDate = new Date(params.endDate);
+        if (endDate.getHours() === 0 && endDate.getMinutes() === 0 && endDate.getSeconds() === 0) {
+            endDate.setHours(23, 59, 59, 999);
+        }
+        query = query.lte('created_at', endDate.toISOString());
     }
 
     // Apply ordering and limit

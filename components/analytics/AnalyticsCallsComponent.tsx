@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useCallback, useMemo, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import {
     Phone,
@@ -47,16 +47,16 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import {
     format as formatDate,
-    subDays,
     startOfDay,
     endOfDay,
     parseISO,
-    isSameDay,
-    differenceInCalendarDays,
 } from "date-fns";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAnalytics } from "@/lib/hooks/useAnalytics";
+import { AnalyticsMinutesOverTimeChart } from "@/components/analytics/AnalyticsMinutesOverTimeChart";
+import { AnalyticsRevenueCostOverTimeChart } from "@/components/analytics/AnalyticsRevenueCostOverTimeChart";
+import { DatePicker } from "@/components/ui/date-picker";
 
 interface Agent {
     id: string;
@@ -79,7 +79,7 @@ interface Subscription {
     currency: string;
 }
 
-interface CallWithAnalytics {
+export interface CallWithAnalytics {
     id: string;
     agent_id: string | null;
     client_id: string;
@@ -110,25 +110,6 @@ interface FilterAgent {
     data: any;
     client_id: string;
 }
-
-type DateRangePreset =
-    | "today"
-    | "yesterday"
-    | "last7"
-    | "last14"
-    | "last30"
-    | "monthToDate"
-    | "allTime";
-
-const DATE_PRESET_LABELS: Record<DateRangePreset, string> = {
-    today: "Today",
-    yesterday: "Yesterday",
-    last7: "Last 7 days",
-    last14: "Last 14 days",
-    last30: "Last 30 days",
-    monthToDate: "Month to date",
-    allTime: "All time",
-};
 
 const CURRENCY_RATES: Record<string, number> = {
     usd: 1.0,
@@ -167,13 +148,13 @@ export function AnalyticsCallsComponent() {
     const [displayCurrency, setDisplayCurrency] = useState<string>('ORIGINAL');
     const [searchTerm, setSearchTerm] = useState<string>("");
     const [compactView, setCompactView] = useState<boolean>(false);
+    const [chartGranularity, setChartGranularity] = useState<'hour' | 'day'>('day');
 
     // Filter state
     const [clientFilter, setClientFilter] = useState('all');
     const [agentFilter, setAgentFilter] = useState('all');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
-    const [datePreset, setDatePreset] = useState<DateRangePreset>("allTime");
 
     // React Query for data fetching
     const { data: analyticsData, isLoading, error } = useAnalytics({
@@ -199,75 +180,30 @@ export function AnalyticsCallsComponent() {
         setAgentFilter(value);
     };
 
-    const handleDateChange = (type: 'start' | 'end', value: string) => {
-        if (type === 'start') {
-            setStartDate(value);
-        } else {
-            setEndDate(value);
-        }
-        setDatePreset("allTime");
+    const handleClearDateRange = () => {
+        setStartDate('');
+        setEndDate('');
     };
 
-    const applyDatePreset = (preset: DateRangePreset) => {
-        const now = new Date();
-        let presetStart: string = '';
-        let presetEnd: string = '';
+    const setBatchDateRange = (start: Date, end: Date) => {
+        setStartDate(start.toISOString());
+        setEndDate(end.toISOString());
+    };
 
-        switch (preset) {
-            case "today": {
-                const start = startOfDay(now);
-                const end = endOfDay(now);
-                presetStart = start.toISOString();
-                presetEnd = end.toISOString();
-                break;
-            }
-            case "yesterday": {
-                const day = subDays(now, 1);
-                presetStart = startOfDay(day).toISOString();
-                presetEnd = endOfDay(day).toISOString();
-                break;
-            }
-            case "last7": {
-                const start = startOfDay(subDays(now, 6));
-                const end = endOfDay(now);
-                presetStart = start.toISOString();
-                presetEnd = end.toISOString();
-                break;
-            }
-            case "last14": {
-                const start = startOfDay(subDays(now, 13));
-                const end = endOfDay(now);
-                presetStart = start.toISOString();
-                presetEnd = end.toISOString();
-                break;
-            }
-            case "last30": {
-                const start = startOfDay(subDays(now, 29));
-                const end = endOfDay(now);
-                presetStart = start.toISOString();
-                presetEnd = end.toISOString();
-                break;
-            }
-            case "monthToDate": {
-                const start = startOfDay(new Date(now.getFullYear(), now.getMonth(), 1));
-                const end = endOfDay(now);
-                presetStart = start.toISOString();
-                presetEnd = end.toISOString();
-                break;
-            }
-            case "allTime": {
-                setStartDate('');
-                setEndDate('');
-                setDatePreset("allTime");
-                return;
-            }
-            default:
-                break;
+    const setStartDateFromPicker = (date: Date | undefined) => {
+        if (date) {
+            setStartDate(date.toISOString());
+        } else {
+            setStartDate('');
         }
+    };
 
-        setStartDate(presetStart);
-        setEndDate(presetEnd);
-        setDatePreset(preset);
+    const setEndDateFromPicker = (date: Date | undefined) => {
+        if (date) {
+            setEndDate(date.toISOString());
+        } else {
+            setEndDate('');
+        }
     };
 
     const clearAllFilters = () => {
@@ -275,7 +211,6 @@ export function AnalyticsCallsComponent() {
         setAgentFilter('all');
         setStartDate('');
         setEndDate('');
-        setDatePreset("allTime");
         setSearchTerm('');
     };
 
@@ -289,9 +224,7 @@ export function AnalyticsCallsComponent() {
                 setAgentFilter('all');
                 break;
             case 'dates':
-                setStartDate('');
-                setEndDate('');
-                setDatePreset("allTime");
+                handleClearDateRange();
                 break;
             case 'search':
                 setSearchTerm('');
@@ -312,7 +245,7 @@ export function AnalyticsCallsComponent() {
         return `${mins.toLocaleString()}m`;
     };
 
-    const convertCurrency = (amount: number, fromCurrency: string, toCurrency: string = displayCurrency) => {
+    const convertCurrency = useCallback((amount: number, fromCurrency: string, toCurrency: string = displayCurrency) => {
         if (fromCurrency.toLowerCase() === toCurrency.toLowerCase()) {
             return amount;
         }
@@ -325,9 +258,9 @@ export function AnalyticsCallsComponent() {
         // Then convert to target currency
         const targetRate = CURRENCY_RATES[toCurrency.toLowerCase()] || 1;
         return usdAmount * targetRate;
-    };
+    }, [displayCurrency]);
 
-    const formatCurrency = (amount: number, currencyCode: string = displayCurrency, useCustomDecimals: boolean = true) => {
+    const formatCurrency = useCallback((amount: number, currencyCode: string = displayCurrency, useCustomDecimals: boolean = true) => {
         const decimals = useCustomDecimals ? decimalPlaces : 2;
         try {
             return new Intl.NumberFormat('en-US', {
@@ -344,7 +277,7 @@ export function AnalyticsCallsComponent() {
                 maximumFractionDigits: decimals
             }).format(amount);
         }
-    };
+    }, [decimalPlaces, displayCurrency]);
 
     const getAgentName = (agent: Agent | null) => {
         if (!agent) return 'Unknown Agent';
@@ -589,6 +522,251 @@ export function AnalyticsCallsComponent() {
 
     const appliedCalls = searchTerm ? filteredCalls : calls;
 
+    const minutesOverTimeData = useMemo(() => {
+        // Determine the date range for the graph
+        let rangeStart: Date;
+        let rangeEnd: Date;
+        
+        if (startDate) {
+            rangeStart = startOfDay(parseISO(startDate));
+        } else if (calls.length > 0) {
+            // If no filter, find earliest call
+            const earliestCall = calls.reduce((earliest, call) => {
+                if (!call.created_at) return earliest;
+                const callDate = parseISO(call.created_at);
+                return !earliest || callDate < earliest ? callDate : earliest;
+            }, null as Date | null);
+            rangeStart = earliestCall ? startOfDay(earliestCall) : startOfDay(new Date());
+        } else {
+            // No calls and no date filter - return empty
+            return [];
+        }
+        
+        if (endDate) {
+            rangeEnd = endOfDay(parseISO(endDate));
+        } else {
+            rangeEnd = endOfDay(new Date());
+        }
+
+        if (chartGranularity === 'hour') {
+            const grouped = new Map<string, { date: Date; totalSeconds: number }>();
+
+            calls.forEach((call: CallWithAnalytics) => {
+                if (!call.created_at) return;
+                const callDate = parseISO(call.created_at);
+                if (isNaN(callDate.getTime())) return;
+                const hourStart = new Date(callDate.getFullYear(), callDate.getMonth(), callDate.getDate(), callDate.getHours(), 0, 0, 0);
+                const key = formatDate(hourStart, 'yyyy-MM-dd HH:00');
+                const existing = grouped.get(key);
+                if (existing) {
+                    existing.totalSeconds += call.seconds || 0;
+                } else {
+                    grouped.set(key, {
+                        date: hourStart,
+                        totalSeconds: call.seconds || 0,
+                    });
+                }
+            });
+
+            // Fill in missing hours with zero values
+            const filledData: { date: string; label: string; fullLabel: string; totalMinutes: number; totalSeconds: number }[] = [];
+            const currentDate = new Date(rangeStart);
+            currentDate.setMinutes(0, 0, 0);
+            const endHour = new Date(rangeEnd);
+            endHour.setMinutes(0, 0, 0);
+            
+            while (currentDate <= endHour) {
+                const key = formatDate(currentDate, 'yyyy-MM-dd HH:00');
+                const existing = grouped.get(key);
+                const totalSeconds = existing?.totalSeconds || 0;
+                const totalMinutes = totalSeconds / 60;
+                
+                filledData.push({
+                    date: currentDate.toISOString(),
+                    label: formatDate(currentDate, 'MMM d HH:mm'),
+                    fullLabel: formatDate(currentDate, 'EEEE, MMM d, yyyy \'at\' HH:00'),
+                    totalMinutes,
+                    totalSeconds,
+                });
+                
+                currentDate.setHours(currentDate.getHours() + 1);
+            }
+
+            return filledData;
+        } else {
+            const grouped = new Map<string, { date: Date; totalSeconds: number }>();
+
+            calls.forEach((call: CallWithAnalytics) => {
+                if (!call.created_at) return;
+                const callDate = parseISO(call.created_at);
+                if (isNaN(callDate.getTime())) return;
+                const dayStart = startOfDay(callDate);
+                const key = formatDate(dayStart, 'yyyy-MM-dd');
+                const existing = grouped.get(key);
+                if (existing) {
+                    existing.totalSeconds += call.seconds || 0;
+                } else {
+                    grouped.set(key, {
+                        date: dayStart,
+                        totalSeconds: call.seconds || 0,
+                    });
+                }
+            });
+
+            // Fill in missing dates with zero values
+            const filledData: { date: string; label: string; fullLabel: string; totalMinutes: number; totalSeconds: number }[] = [];
+            const currentDate = new Date(rangeStart);
+            
+            while (currentDate <= rangeEnd) {
+                const key = formatDate(currentDate, 'yyyy-MM-dd');
+                const existing = grouped.get(key);
+                const totalSeconds = existing?.totalSeconds || 0;
+                const totalMinutes = totalSeconds / 60;
+                
+                filledData.push({
+                    date: currentDate.toISOString(),
+                    label: formatDate(currentDate, 'MMM d'),
+                    fullLabel: formatDate(currentDate, 'EEEE, MMM d, yyyy'),
+                    totalMinutes,
+                    totalSeconds,
+                });
+                
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+
+            return filledData;
+        }
+    }, [calls, chartGranularity, startDate, endDate]);
+
+    const revenueCostOverTimeData = useMemo(() => {
+        const targetCurrency = effectiveDisplayCurrency;
+
+        // Determine the date range for the graph (same logic as minutesOverTimeData)
+        let rangeStart: Date;
+        let rangeEnd: Date;
+        
+        if (startDate) {
+            rangeStart = startOfDay(parseISO(startDate));
+        } else if (calls.length > 0) {
+            const earliestCall = calls.reduce((earliest, call) => {
+                if (!call.created_at) return earliest;
+                const callDate = parseISO(call.created_at);
+                return !earliest || callDate < earliest ? callDate : earliest;
+            }, null as Date | null);
+            rangeStart = earliestCall ? startOfDay(earliestCall) : startOfDay(new Date());
+        } else {
+            // No calls and no date filter - return empty
+            return [];
+        }
+        
+        if (endDate) {
+            rangeEnd = endOfDay(parseISO(endDate));
+        } else {
+            rangeEnd = endOfDay(new Date());
+        }
+
+        if (chartGranularity === 'hour') {
+            const grouped = new Map<string, { date: Date; revenue: number; cost: number }>();
+
+            calls.forEach((call: CallWithAnalytics) => {
+                if (!call.created_at) return;
+                const callDate = parseISO(call.created_at);
+                if (isNaN(callDate.getTime())) return;
+                const hourStart = new Date(callDate.getFullYear(), callDate.getMonth(), callDate.getDate(), callDate.getHours(), 0, 0, 0);
+                const key = formatDate(hourStart, 'yyyy-MM-dd HH:00');
+
+                const revenue = convertCurrency(call.revenue || 0, call.currency || 'usd', targetCurrency);
+                const cost = convertCurrency(call.cost || 0, 'usd', targetCurrency);
+
+                const existing = grouped.get(key);
+                if (existing) {
+                    existing.revenue += revenue;
+                    existing.cost += cost;
+                } else {
+                    grouped.set(key, {
+                        date: hourStart,
+                        revenue,
+                        cost,
+                    });
+                }
+            });
+
+            // Fill in missing hours with zero values
+            const filledData: { date: string; label: string; fullLabel: string; revenue: number; cost: number }[] = [];
+            const currentDate = new Date(rangeStart);
+            currentDate.setMinutes(0, 0, 0);
+            const endHour = new Date(rangeEnd);
+            endHour.setMinutes(0, 0, 0);
+            
+            while (currentDate <= endHour) {
+                const key = formatDate(currentDate, 'yyyy-MM-dd HH:00');
+                const existing = grouped.get(key);
+                
+                filledData.push({
+                    date: currentDate.toISOString(),
+                    label: formatDate(currentDate, 'MMM d HH:mm'),
+                    fullLabel: formatDate(currentDate, 'EEEE, MMM d, yyyy \'at\' HH:00'),
+                    revenue: existing?.revenue || 0,
+                    cost: existing?.cost || 0,
+                });
+                
+                currentDate.setHours(currentDate.getHours() + 1);
+            }
+
+            return filledData;
+        } else {
+            const grouped = new Map<string, { date: Date; revenue: number; cost: number }>();
+
+            calls.forEach((call: CallWithAnalytics) => {
+                if (!call.created_at) return;
+                const callDate = parseISO(call.created_at);
+                if (isNaN(callDate.getTime())) return;
+                const dayStart = startOfDay(callDate);
+                const key = formatDate(dayStart, 'yyyy-MM-dd');
+
+                const revenue = convertCurrency(call.revenue || 0, call.currency || 'usd', targetCurrency);
+                const cost = convertCurrency(call.cost || 0, 'usd', targetCurrency);
+
+                const existing = grouped.get(key);
+                if (existing) {
+                    existing.revenue += revenue;
+                    existing.cost += cost;
+                } else {
+                    grouped.set(key, {
+                        date: dayStart,
+                        revenue,
+                        cost,
+                    });
+                }
+            });
+
+            // Fill in missing dates with zero values
+            const filledData: { date: string; label: string; fullLabel: string; revenue: number; cost: number }[] = [];
+            const currentDate = new Date(rangeStart);
+            
+            while (currentDate <= rangeEnd) {
+                const key = formatDate(currentDate, 'yyyy-MM-dd');
+                const existing = grouped.get(key);
+                
+                filledData.push({
+                    date: currentDate.toISOString(),
+                    label: formatDate(currentDate, 'MMM d'),
+                    fullLabel: formatDate(currentDate, 'EEEE, MMM d, yyyy'),
+                    revenue: existing?.revenue || 0,
+                    cost: existing?.cost || 0,
+                });
+                
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+
+            return filledData;
+        }
+    }, [calls, convertCurrency, effectiveDisplayCurrency, chartGranularity, startDate, endDate]);
+
+    const revenueCostCurrencyFormatter = useCallback((value: number) => (
+        formatCurrency(value, effectiveDisplayCurrency)
+    ), [formatCurrency, effectiveDisplayCurrency]);
+
     // Calculate additional metrics
     const totalSeconds = appliedCalls.reduce((sum: number, call: CallWithAnalytics) => sum + call.seconds, 0);
     const avgCallDuration = appliedCalls.length > 0 ? totalSeconds / appliedCalls.length : 0;
@@ -649,90 +827,152 @@ export function AnalyticsCallsComponent() {
             <Card>
                 <CardContent className="pt-6">
                     <div className="space-y-4">
-                        <div className="flex items-center justify-between gap-4 flex-wrap">
-                            <div className="flex items-center gap-3">
-                                <Label className="text-sm font-medium">Quick Date Range</Label>
-                                {isLoading && (
-                                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                                )}
-                            </div>
-                            <div className="flex items-center gap-3 flex-wrap">
-                                <div className="flex items-center gap-2">
-                                    <Label htmlFor="display-currency" className="text-xs text-muted-foreground whitespace-nowrap">
-                                        Currency:
-                                    </Label>
-                                    <Select
-                                        value={displayCurrency}
-                                        onValueChange={setDisplayCurrency}
-                                    >
-                                        <SelectTrigger id="display-currency" className="h-8 w-[110px] text-xs">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {CURRENCY_OPTIONS.map((currency) => (
-                                                <SelectItem key={currency.value} value={currency.value}>
-                                                    {currency.label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                        <div className="flex flex-col gap-4">
+                            <div className="flex items-center justify-between gap-4 flex-wrap">
+                                <div className="flex items-center gap-3">
+                                    <Label className="text-sm font-medium">Filters</Label>
+                                    {isLoading && (
+                                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                    )}
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <Label htmlFor="decimal-places" className="text-xs text-muted-foreground whitespace-nowrap">
-                                        Precision:
-                                    </Label>
-                                    <Select
-                                        value={decimalPlaces.toString()}
-                                        onValueChange={(value) => setDecimalPlaces(parseInt(value))}
-                                    >
-                                        <SelectTrigger id="decimal-places" className="h-8 w-[110px] text-xs">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="2">2 decimals</SelectItem>
-                                            <SelectItem value="3">3 decimals</SelectItem>
-                                            <SelectItem value="4">4 decimals</SelectItem>
-                                            <SelectItem value="5">5 decimals</SelectItem>
-                                            <SelectItem value="6">6 decimals</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <Button
-                                    variant={compactView ? "default" : "outline"}
-                                    size="sm"
-                                    onClick={() => setCompactView(!compactView)}
-                                    className="gap-2 h-8"
-                                >
-                                    <BarChart3 className="h-4 w-4" />
-                                    {compactView ? "Default" : "Compact"}
-                                </Button>
-                                {hasActiveFilters && (
+                                <div className="flex items-center gap-3 flex-wrap">
+                                    <div className="flex items-center gap-2">
+                                        <Label htmlFor="display-currency" className="text-xs text-muted-foreground whitespace-nowrap">
+                                            Currency:
+                                        </Label>
+                                        <Select
+                                            value={displayCurrency}
+                                            onValueChange={setDisplayCurrency}
+                                        >
+                                            <SelectTrigger id="display-currency" className="h-8 w-[110px] text-xs">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {CURRENCY_OPTIONS.map((currency) => (
+                                                    <SelectItem key={currency.value} value={currency.value}>
+                                                        {currency.label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Label htmlFor="decimal-places" className="text-xs text-muted-foreground whitespace-nowrap">
+                                            Precision:
+                                        </Label>
+                                        <Select
+                                            value={decimalPlaces.toString()}
+                                            onValueChange={(value) => setDecimalPlaces(parseInt(value))}
+                                        >
+                                            <SelectTrigger id="decimal-places" className="h-8 w-[110px] text-xs">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="2">2 decimals</SelectItem>
+                                                <SelectItem value="3">3 decimals</SelectItem>
+                                                <SelectItem value="4">4 decimals</SelectItem>
+                                                <SelectItem value="5">5 decimals</SelectItem>
+                                                <SelectItem value="6">6 decimals</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                     <Button
-                                        variant="ghost"
+                                        variant={compactView ? "default" : "outline"}
                                         size="sm"
-                                        onClick={clearAllFilters}
-                                        className="h-8 text-xs"
+                                        onClick={() => setCompactView(!compactView)}
+                                        className="gap-2 h-8"
                                     >
-                                        Clear all filters
+                                        <BarChart3 className="h-4 w-4" />
+                                        {compactView ? "Default" : "Compact"}
                                     </Button>
-                                )}
+                                    {hasActiveFilters && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={clearAllFilters}
+                                            className="h-8 text-xs"
+                                        >
+                                            Clear all filters
+                                        </Button>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col md:flex-row md:items-end md:flex-wrap gap-4">
+                                <div className="flex flex-col gap-1">
+                                    <span className="text-xs text-muted-foreground">Start date</span>
+                                    <DatePicker
+                                        date={startDate ? new Date(startDate) : undefined}
+                                        onDateChange={setStartDateFromPicker}
+                                        placeholder="Start date"
+                                    />
+                                </div>
+                                <div className="flex flex-col gap-1">
+                                    <span className="text-xs text-muted-foreground">End date</span>
+                                    <DatePicker
+                                        date={endDate ? new Date(endDate) : undefined}
+                                        onDateChange={setEndDateFromPicker}
+                                        placeholder="End date"
+                                    />
+                                </div>
+                                <div className="flex flex-col gap-1">
+                                    <span className="text-xs text-muted-foreground">Quick ranges</span>
+                                    <div className="flex flex-wrap gap-2">
+                                        <button
+                                            className="text-xs rounded-md border px-2 py-1.5 hover:bg-accent"
+                                            onClick={() => {
+                                                const now = new Date()
+                                                const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+                                                setBatchDateRange(startOfDay, now)
+                                            }}
+                                        >
+                                            Today
+                                        </button>
+                                        <button
+                                            className="text-xs rounded-md border px-2 py-1.5 hover:bg-accent"
+                                            onClick={() => {
+                                                const now = new Date()
+                                                const yesterday = new Date(now)
+                                                yesterday.setDate(now.getDate() - 1)
+                                                const startOfYesterday = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate())
+                                                const endOfYesterday = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 23, 59, 59)
+                                                setBatchDateRange(startOfYesterday, endOfYesterday)
+                                            }}
+                                        >
+                                            Yesterday
+                                        </button>
+                                        <button
+                                            className="text-xs rounded-md border px-2 py-1.5 hover:bg-accent"
+                                            onClick={() => {
+                                                const end = new Date()
+                                                const start = new Date()
+                                                start.setDate(end.getDate() - 6)
+                                                const startOfDay = new Date(start.getFullYear(), start.getMonth(), start.getDate())
+                                                setBatchDateRange(startOfDay, end)
+                                            }}
+                                        >
+                                            Last 7 days
+                                        </button>
+                                        <button
+                                            className="text-xs rounded-md border px-2 py-1.5 hover:bg-accent"
+                                            onClick={() => {
+                                                const end = new Date()
+                                                const start = new Date()
+                                                start.setDate(end.getDate() - 29)
+                                                const startOfDay = new Date(start.getFullYear(), start.getMonth(), start.getDate())
+                                                setBatchDateRange(startOfDay, end)
+                                            }}
+                                        >
+                                            Last 30 days
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <Tabs value={datePreset} onValueChange={(v) => applyDatePreset(v as DateRangePreset)}>
-                            <TabsList className="grid w-full grid-cols-7 h-auto">
-                                <TabsTrigger value="today" className="text-xs">Today</TabsTrigger>
-                                <TabsTrigger value="yesterday" className="text-xs">Yesterday</TabsTrigger>
-                                <TabsTrigger value="last7" className="text-xs">7 days</TabsTrigger>
-                                <TabsTrigger value="last14" className="text-xs">14 days</TabsTrigger>
-                                <TabsTrigger value="last30" className="text-xs">30 days</TabsTrigger>
-                                <TabsTrigger value="monthToDate" className="text-xs">MTD</TabsTrigger>
-                                <TabsTrigger value="allTime" className="text-xs">All</TabsTrigger>
-                            </TabsList>
-                        </Tabs>
                         
                         <Separator />
 
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="client-filter" className="text-xs font-medium">
                                     Client
@@ -774,34 +1014,6 @@ export function AnalyticsCallsComponent() {
                                     </SelectContent>
                                 </Select>
                             </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="start-date" className="text-xs font-medium">
-                                    Start Date
-                                </Label>
-                                <Input
-                                    id="start-date"
-                                    type="date"
-                                    value={startDate ? formatDate(parseISO(startDate), 'yyyy-MM-dd') : ''}
-                                    onChange={(e) => handleDateChange('start', e.target.value ? new Date(e.target.value).toISOString() : '')}
-                                    disabled={isLoading}
-                                    className="h-9"
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="end-date" className="text-xs font-medium">
-                                    End Date
-                                </Label>
-                                <Input
-                                    id="end-date"
-                                    type="date"
-                                    value={endDate ? formatDate(parseISO(endDate), 'yyyy-MM-dd') : ''}
-                                    onChange={(e) => handleDateChange('end', e.target.value ? new Date(e.target.value).toISOString() : '')}
-                                    disabled={isLoading}
-                                    className="h-9"
-                                />
-                            </div>
                         </div>
 
                         {/* Active Filters Chips */}
@@ -835,7 +1047,11 @@ export function AnalyticsCallsComponent() {
                                 )}
                                 {(startDate || endDate) && (
                                     <Badge variant="secondary" className="gap-1 pr-1">
-                                        {DATE_PRESET_LABELS[datePreset] || 'Custom dates'}
+                                        {startDate && endDate ? (
+                                            `${formatDate(parseISO(startDate), 'MMM d')} - ${formatDate(parseISO(endDate), 'MMM d, yyyy')}`
+                                        ) : (
+                                            'Custom dates'
+                                        )}
                                         <Button
                                             variant="ghost"
                                             size="sm"
@@ -961,6 +1177,31 @@ export function AnalyticsCallsComponent() {
                         </div>
                     </CardContent>
                 </Card>
+            </div>
+
+            <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold">Analytics Over Time</h3>
+                    <Tabs value={chartGranularity} onValueChange={(v) => setChartGranularity(v as 'hour' | 'day')}>
+                        <TabsList className="h-9">
+                            <TabsTrigger value="hour" className="text-xs">Hourly</TabsTrigger>
+                            <TabsTrigger value="day" className="text-xs">Daily</TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+                </div>
+                
+                <div className="grid gap-4 lg:grid-cols-2">
+                    <AnalyticsMinutesOverTimeChart
+                        data={minutesOverTimeData}
+                        isLoading={isLoading}
+                    />
+                    <AnalyticsRevenueCostOverTimeChart
+                        data={revenueCostOverTimeData}
+                        isLoading={isLoading}
+                        currencyCode={effectiveDisplayCurrency}
+                        currencyFormatter={revenueCostCurrencyFormatter}
+                    />
+                </div>
             </div>
 
             {/* Search and Calls Table */}

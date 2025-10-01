@@ -89,13 +89,13 @@ const navigationSections: NavigationSection[] = [
         url: "/app/agents",
         icon: Bot,
       },
-      {
-        title: "Workflows",
-        description: "Automate call journeys",
-        url: "/app/workflows",
-        icon: Workflow,
-        // badge: "Beta",
-      },
+      // {
+      //   title: "Workflows",
+      //   description: "Automate call journeys",
+      //   url: "/app/workflows",
+      //   icon: Workflow,
+      //   // badge: "Beta",
+      // },
       {
         title: 'Knowledge Base',
         description: 'Manage your knowledge base',
@@ -115,7 +115,7 @@ const navigationSections: NavigationSection[] = [
     items: [
       {
         title: "Billing",
-        description: "Plans & invoices",
+        description: "Usage & billing",
         url: "/app/billing",
         icon: CreditCard,
       },
