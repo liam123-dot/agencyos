@@ -1397,12 +1397,22 @@ export function AnalyticsCallsComponent() {
                                                         </span>
                                                     </TableCell>
                                                     <TableCell className={cn("text-sm text-right", compactView ? "py-2" : "py-4")}>
-                                                        <span className={getMarginStyles(call.margin)}>
-                                                            {displayCurrency === 'ORIGINAL' 
-                                                                ? formatCurrency(call.margin, call.currency)
-                                                                : formatCurrency(convertCurrency(call.margin, call.currency, displayCurrency), displayCurrency)
-                                                            }
-                                                        </span>
+                                                        <div className="flex flex-col items-end">
+                                                            <span className={getMarginStyles(call.margin)}>
+                                                                {displayCurrency === 'ORIGINAL' 
+                                                                    ? formatCurrency(call.margin, call.currency)
+                                                                    : formatCurrency(convertCurrency(call.margin, call.currency, displayCurrency), displayCurrency)
+                                                                }
+                                                            </span>
+                                                            {!compactView && call.seconds > 0 && (
+                                                                <span className="text-xs text-slate-400">
+                                                                    {displayCurrency === 'ORIGINAL'
+                                                                        ? formatCurrency((call.margin / (call.seconds / 60)), call.currency)
+                                                                        : formatCurrency((convertCurrency(call.margin, call.currency, displayCurrency) / (call.seconds / 60)), displayCurrency)
+                                                                    }/min
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </TableCell>
                                                     <TableCell className={cn("text-right", compactView ? "py-2" : "py-4")}>
                                                         {!compactView && (
