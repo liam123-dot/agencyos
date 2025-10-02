@@ -104,12 +104,12 @@ export function GeneralSettings({ user, userProfile }: GeneralSettingsProps) {
               value={formData.email}
               onChange={(e) => handleInputChange('email', e.target.value)}
               placeholder="Enter your email address"
-              disabled={isLoading}
+              disabled={true}
               required
             />
-            <p className="text-xs text-muted-foreground">
+            {/* <p className="text-xs text-muted-foreground">
               If you change your email, you'll need to verify the new address.
-            </p>
+            </p> */}
           </div>
         </div>
 
@@ -136,7 +136,7 @@ export function GeneralSettings({ user, userProfile }: GeneralSettingsProps) {
         </div>
       </form>
 
-      <Separator />
+      {/* <Separator />
 
       <div className="space-y-4">
         <div className="pb-3 border-b border-gray-100">
@@ -158,7 +158,7 @@ export function GeneralSettings({ user, userProfile }: GeneralSettingsProps) {
             <span>{userProfile?.updated_at ? new Date(userProfile.updated_at).toLocaleDateString() : 'N/A'}</span>
           </div>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }
