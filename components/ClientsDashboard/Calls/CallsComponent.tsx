@@ -1,8 +1,8 @@
 'use client'
 
-import { Fragment, useEffect, useState, useTransition } from "react";
+import { Fragment, useEffect, useState, useTransition, useRef } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { Phone, ChevronRight } from "lucide-react";
+import { Phone, ChevronRight, Play, Pause, Loader2 } from "lucide-react";
 import { getCalls } from "./CallsServerComponent";
 import { CallsPagination } from "./CallsPagination";
 import { CallsLimitSelector } from "./CallsLimitSelector";
@@ -71,6 +71,10 @@ export function CallsComponent({ initialPage = 1, initialLimit = 10, clientId }:
     const [agentFilter, setAgentFilter] = useState(searchParams.get('agent') || 'all');
     
     const [expandedCallId, setExpandedCallId] = useState<string | null>(null);
+    const [playingCallId, setPlayingCallId] = useState<string | null>(null);
+    const [loadingCallId, setLoadingCallId] = useState<string | null>(null);
+    const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
+    const playbackRequestsRef = useRef<Map<string, number>>(new Map());
 
     const currentPage = parseInt(searchParams.get('page') || initialPage.toString(), 10);
     const currentLimit = parseInt(searchParams.get('limit') || initialLimit.toString(), 10);
@@ -118,6 +122,17 @@ export function CallsComponent({ initialPage = 1, initialLimit = 10, clientId }:
         });
     }, [currentPage, currentLimit, agentFilter]);
 
+    // Cleanup audio elements on unmount
+    useEffect(() => {
+        return () => {
+            audioRefs.current.forEach((audio) => {
+                audio.pause();
+                audio.src = "";
+            });
+            audioRefs.current.clear();
+        };
+    }, []);
+
     const handleAgentFilter = (value: string) => {
         setAgentFilter(value);
         updateURL({ agent: value });
@@ -125,6 +140,165 @@ export function CallsComponent({ initialPage = 1, initialLimit = 10, clientId }:
 
     const toggleExpandedRow = (callId: string) => {
         setExpandedCallId((prev) => (prev === callId ? null : callId));
+    };
+
+    const handleAudioPlayback = async (callId: string, audioUrl: string) => {
+        // Validate audio URL
+        if (!audioUrl || typeof audioUrl !== 'string' || audioUrl.trim() === '') {
+            console.error('Invalid audio URL provided:', audioUrl);
+            return;
+        }
+
+        // Increment the playback request id for this call to invalidate previous async steps
+        const nextRequestId = (playbackRequestsRef.current.get(callId) ?? 0) + 1;
+        playbackRequestsRef.current.set(callId, nextRequestId);
+
+        // If this call is already playing or loading, pause/cancel it
+        if (playingCallId === callId || loadingCallId === callId) {
+            const audio = audioRefs.current.get(callId);
+            if (audio) {
+                if (!audio.paused) {
+                    audio.pause();
+                }
+                audio.currentTime = 0;
+                setPlayingCallId(null);
+                setLoadingCallId(null);
+            }
+            return;
+        }
+
+        // Set loading state
+        setLoadingCallId(callId);
+
+        // Pause any currently playing audio
+        if (playingCallId) {
+            const currentAudio = audioRefs.current.get(playingCallId);
+            if (currentAudio && !currentAudio.paused) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+            }
+            setPlayingCallId(null);
+        }
+
+        // Get or create audio element
+        let audio = audioRefs.current.get(callId);
+        const isNewAudio = !audio;
+        
+        if (!audio) {
+            audio = new Audio();
+            
+            // Configure audio element
+            audio.preload = 'auto';
+            
+            // Add event listeners
+            audio.addEventListener('ended', () => {
+                if (playbackRequestsRef.current.get(callId) !== nextRequestId) {
+                    return;
+                }
+                setPlayingCallId(null);
+                setLoadingCallId(null);
+            });
+            
+            audio.addEventListener('error', (e) => {
+                if (playbackRequestsRef.current.get(callId) !== nextRequestId) {
+                    return;
+                }
+                setPlayingCallId(null);
+                setLoadingCallId(null);
+                const target = e.target as HTMLAudioElement;
+                console.error('Error loading audio recording:', {
+                    error: e,
+                    errorCode: target.error?.code,
+                    errorMessage: target.error?.message,
+                    audioUrl: target.src,
+                    networkState: target.networkState,
+                    readyState: target.readyState
+                });
+            });
+
+            audio.addEventListener('loadeddata', () => {
+                if (playbackRequestsRef.current.get(callId) !== nextRequestId) {
+                    return;
+                }
+                setLoadingCallId(null);
+            });
+
+            audio.addEventListener('canplay', () => {
+                if (playbackRequestsRef.current.get(callId) !== nextRequestId) {
+                    return;
+                }
+                setLoadingCallId(null);
+            });
+            
+            audioRefs.current.set(callId, audio);
+        }
+
+        // Always ensure the src is set correctly before playing
+        // (it might have been cleared after an error or need to be reset)
+        const needsNewSrc = audio.src !== audioUrl;
+        if (needsNewSrc) {
+            audio.src = audioUrl;
+        } else if (!audio.src) {
+            // Some browsers may leave src empty after errors; ensure it's set
+            audio.src = audioUrl;
+        }
+
+        try {
+            if (isNewAudio || needsNewSrc) {
+                await new Promise<void>((resolve, reject) => {
+                    if (playbackRequestsRef.current.get(callId) !== nextRequestId) {
+                        resolve();
+                        return;
+                    }
+
+                    if (audio!.readyState >= 3) {
+                        resolve();
+                        return;
+                    }
+
+                    const onCanPlay = () => {
+                        cleanup();
+                        resolve();
+                    };
+
+                    const onError = (e: Event) => {
+                        cleanup();
+                        reject(e);
+                    };
+
+                    const cleanup = () => {
+                        audio!.removeEventListener('canplay', onCanPlay);
+                        audio!.removeEventListener('error', onError);
+                    };
+
+                    audio!.addEventListener('canplay', onCanPlay, { once: true });
+                    audio!.addEventListener('error', onError, { once: true });
+                    audio!.load();
+                });
+            }
+
+            if (playbackRequestsRef.current.get(callId) !== nextRequestId) {
+                return;
+            }
+
+            await audio.play();
+
+            if (playbackRequestsRef.current.get(callId) !== nextRequestId) {
+                return;
+            }
+
+            setPlayingCallId(callId);
+            setLoadingCallId(null);
+        } catch (error: any) {
+            if (playbackRequestsRef.current.get(callId) !== nextRequestId) {
+                return;
+            }
+            if (error.name !== 'AbortError') {
+                console.error('Error playing audio:', error);
+            }
+            setPlayingCallId(null);
+            setLoadingCallId(null);
+        }
     };
 
     const formatDuration = (seconds: number) => {
@@ -328,6 +502,7 @@ const getTranscriptEntries = (callData: any, agentLabel: string) => {
                                     <TableHead className="w-[160px] px-4">Status</TableHead>
                                     <TableHead className="w-[200px] px-4">Customer</TableHead>
                                     <TableHead className="w-[140px] px-4">Duration</TableHead>
+                                    <TableHead className="w-[80px] px-4">Recording</TableHead>
                                     <TableHead className="w-[120px] px-6 text-right">Details</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -357,6 +532,9 @@ const getTranscriptEntries = (callData: any, agentLabel: string) => {
                                     const outcome = call.data.endedReason;
                                     const transcript = getTranscriptEntries(call.data, agentName);
                                     const isExpanded = expandedCallId === call.id;
+                                    const recordingUrl = (call.data as any).stereoRecordingUrl;
+                                    const isPlaying = playingCallId === call.id;
+                                    const isLoading = loadingCallId === call.id;
 
                                     return (
                                         <Fragment key={call.id}>
@@ -412,6 +590,31 @@ const getTranscriptEntries = (callData: any, agentLabel: string) => {
                                                     </div>
                                                 </TableCell>
                                                 <TableCell className="px-4 text-sm text-slate-600 align-middle">{duration}</TableCell>
+                                                <TableCell className="px-4 align-middle">
+                                                    {recordingUrl ? (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={(event) => {
+                                                                event.stopPropagation();
+                                                                handleAudioPlayback(call.id, recordingUrl);
+                                                            }}
+                                                            disabled={isLoading}
+                                                            className="h-8 w-8 rounded-full p-0 text-blue-600 hover:bg-blue-50 hover:text-blue-700 disabled:opacity-70"
+                                                            aria-label={isLoading ? "Loading..." : isPlaying ? "Pause recording" : "Play recording"}
+                                                        >
+                                                            {isLoading ? (
+                                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                            ) : isPlaying ? (
+                                                                <Pause className="h-4 w-4" />
+                                                            ) : (
+                                                                <Play className="h-4 w-4" />
+                                                            )}
+                                                        </Button>
+                                                    ) : (
+                                                        <span className="text-xs text-slate-400">N/A</span>
+                                                    )}
+                                                </TableCell>
                                                 <TableCell className="px-6 text-right align-middle">
                                                     <Button
                                                         variant="ghost"
@@ -428,7 +631,7 @@ const getTranscriptEntries = (callData: any, agentLabel: string) => {
                                             </TableRow>
                                             {isExpanded && (
                                                 <TableRow className="bg-slate-50/70">
-                                                    <TableCell colSpan={5} className="px-6 pb-6 pt-4">
+                                                    <TableCell colSpan={6} className="px-6 pb-6 pt-4">
                                                         <div className="flex flex-col gap-5 text-sm text-slate-600">
                                                         <div className="flex flex-wrap items-center gap-2">
                                                             {type && (
