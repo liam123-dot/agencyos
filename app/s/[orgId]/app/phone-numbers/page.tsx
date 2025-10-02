@@ -1,4 +1,4 @@
-'use server'
+// 'use server'
 
 import PhoneNumbersWrapper from "@/components/organizations/TwilioSetup/PhoneNumbersWrapper"
 import { redirect } from "next/navigation"

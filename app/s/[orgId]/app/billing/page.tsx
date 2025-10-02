@@ -1,4 +1,4 @@
-'use server'
+// 'use server'
 
 import ClientProductsComponent from "@/components/ClientsDashboard/ClientsProducts/ClientProductsComponent"
 import BillingSuccessHandler from "@/components/ClientsDashboard/ClientsProducts/BillingSuccessHandler"
