@@ -1,15 +1,16 @@
 'use client'
 
 import { useCallback, useState, useMemo, useRef, useEffect } from "react";
-import { ReactFlow, applyNodeChanges, applyEdgeChanges, addEdge, Background, Controls, MiniMap, Handle, Position, BaseEdge, EdgeLabelRenderer, getBezierPath, EdgeProps } from '@xyflow/react';
+import { ReactFlow, applyNodeChanges, applyEdgeChanges, addEdge, Background, Controls, MiniMap, Handle, Position, BaseEdge, EdgeLabelRenderer, getSmoothStepPath, EdgeProps } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Plus, Save, X, Pencil, Check, Phone } from "lucide-react";
+import { Plus, Save, X, Pencil, Check, Phone, Bot, Workflow, ExternalLink } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { saveOrchestration } from "@/app/api/agents/orchestration/orchestrationActions";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 interface PhoneNumber {
     id: string;
@@ -36,6 +37,7 @@ interface CustomEdgeData {
 // Add this new interface
 interface AgentNodeData {
     label: string;
+    agentId: string;
 }
 
 // Create a union type for all node data
@@ -51,16 +53,17 @@ function SimpleEdge({
     targetPosition,
     markerEnd,
 }: EdgeProps) {
-    const [edgePath] = getBezierPath({
+    const [edgePath] = getSmoothStepPath({
         sourceX,
         sourceY,
         sourcePosition,
         targetX,
         targetY,
         targetPosition,
+        borderRadius: 8,
     });
 
-    return <BaseEdge path={edgePath} markerEnd={markerEnd} style={{ strokeWidth: 2 }} />;
+    return <BaseEdge path={edgePath} markerEnd={markerEnd} style={{ strokeWidth: 3, stroke: '#10b981' }} />;
 }
 
 // Custom Edge Component with Add Button (for conditional transfers)
@@ -75,13 +78,14 @@ function CustomEdge({
     data,
     markerEnd,
 }: EdgeProps & { data?: CustomEdgeData }) {
-    const [edgePath, labelX, labelY] = getBezierPath({
+    const [edgePath, labelX, labelY] = getSmoothStepPath({
         sourceX,
         sourceY,
         sourcePosition,
         targetX,
         targetY,
         targetPosition,
+        borderRadius: 8,
     });
 
     const [isEditing, setIsEditing] = useState(false);
@@ -107,7 +111,7 @@ function CustomEdge({
 
     return (
         <>
-            <BaseEdge path={edgePath} markerEnd={markerEnd} style={{ strokeWidth: 2 }} />
+            <BaseEdge path={edgePath} markerEnd={markerEnd} style={{ strokeWidth: 2.5, stroke: '#6366f1' }} />
             <EdgeLabelRenderer>
                 <div
                     style={{
@@ -121,32 +125,32 @@ function CustomEdge({
                         <Button
                             size="sm"
                             variant="outline"
-                            className="h-8 w-8 p-0 rounded-full bg-white hover:bg-blue-50 border-2 border-blue-500 shadow-lg"
+                            className="h-9 w-9 p-0 rounded-full bg-white hover:bg-indigo-50 border-2 border-indigo-500 shadow-lg hover:shadow-xl transition-all hover:scale-110"
                             onClick={() => setIsEditing(true)}
                         >
-                            <Plus className="w-4 h-4 text-blue-600" />
+                            <Plus className="w-4 h-4 text-indigo-600" />
                         </Button>
                     ) : isEditing ? (
-                        <div className="flex flex-col gap-2 bg-white rounded-lg shadow-lg border-2 border-blue-500 p-3">
-                            <div className="space-y-1">
-                                <label className="text-xs font-medium text-gray-600">When to transfer:</label>
+                        <div className="flex flex-col gap-3 bg-white rounded-xl shadow-2xl border-2 border-indigo-500 p-4">
+                            <div className="space-y-2">
+                                <label className="text-xs font-semibold text-indigo-600 uppercase tracking-wide">When to transfer:</label>
                                 <Input
                                     autoFocus
                                     value={description}
                                     onChange={(e) => setDescription(e.target.value)}
                                     onKeyDown={handleKeyDown}
                                     placeholder="e.g., if they want to speak to sales"
-                                    className="w-[280px] h-8 text-sm"
+                                    className="w-[300px] h-9 text-sm border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
                                 />
                             </div>
-                            <div className="space-y-1">
-                                <label className="text-xs font-medium text-gray-600">Transfer message:</label>
+                            <div className="space-y-2">
+                                <label className="text-xs font-semibold text-indigo-600 uppercase tracking-wide">Transfer message:</label>
                                 <Input
                                     value={message}
                                     onChange={(e) => setMessage(e.target.value)}
                                     onKeyDown={handleKeyDown}
                                     placeholder="e.g., Transferring you to sales"
-                                    className="w-[280px] h-8 text-sm"
+                                    className="w-[300px] h-9 text-sm border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
                                 />
                             </div>
                             <div className="flex gap-2 justify-end pt-1">
@@ -158,14 +162,14 @@ function CustomEdge({
                                         setMessage(data?.message || '');
                                         setIsEditing(false);
                                     }}
-                                    className="h-7 px-2 text-xs"
+                                    className="h-8 px-3 text-xs"
                                 >
                                     Cancel
                                 </Button>
                                 <Button
                                     size="sm"
                                     onClick={handleSave}
-                                    className="h-7 px-3 text-xs"
+                                    className="h-8 px-4 text-xs bg-indigo-600 hover:bg-indigo-700"
                                 >
                                     <Check className="w-3 h-3 mr-1" />
                                     Save
@@ -174,20 +178,26 @@ function CustomEdge({
                         </div>
                     ) : (
                         <div 
-                            className="bg-white rounded-lg shadow-md border border-gray-200 px-3 py-2 max-w-[320px] cursor-pointer hover:border-blue-400 transition-colors group relative"
+                            className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl shadow-lg border-2 border-indigo-200 px-4 py-3 max-w-[340px] cursor-pointer hover:border-indigo-400 hover:shadow-xl transition-all group relative"
                             onClick={() => setIsEditing(true)}
                         >
-                            <div className="space-y-1">
-                                <p className="text-xs text-gray-500">When:</p>
-                                <p className="text-sm text-gray-700 font-medium">{data?.description}</p>
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-1.5">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
+                                    <p className="text-xs font-semibold text-indigo-600 uppercase tracking-wide">When:</p>
+                                </div>
+                                <p className="text-sm text-gray-800 font-medium leading-relaxed">{data?.description}</p>
                                 {data?.message && (
                                     <>
-                                        <p className="text-xs text-gray-500 mt-2">Message:</p>
-                                        <p className="text-sm text-gray-600">{data?.message}</p>
+                                        <div className="flex items-center gap-1.5 mt-3">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-purple-500"></div>
+                                            <p className="text-xs font-semibold text-purple-600 uppercase tracking-wide">Message:</p>
+                                        </div>
+                                        <p className="text-sm text-gray-700 leading-relaxed">{data?.message}</p>
                                     </>
                                 )}
                             </div>
-                            <Pencil className="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity absolute top-2 right-2" />
+                            <Pencil className="w-3.5 h-3.5 text-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity absolute top-3 right-3" />
                         </div>
                     )}
                 </div>
@@ -199,21 +209,23 @@ function CustomEdge({
 // Custom Start Node Component
 function StartCallNode({ data }: { data: StartCallNodeData }) {
     return (
-        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg shadow-lg border-2 border-emerald-700 min-w-[280px]">
-            <div className="px-4 py-3 space-y-3">
+        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-xl border-2 border-emerald-700 min-w-[300px] hover:shadow-2xl transition-shadow">
+            <div className="px-5 py-4 space-y-3">
                 {/* Header */}
-                <div className="flex items-center gap-2 text-white">
-                    <Phone className="w-5 h-5" />
-                    <span className="font-semibold text-base">Start Call</span>
+                <div className="flex items-center gap-2.5 text-white">
+                    <div className="p-1.5 bg-white/20 rounded-lg">
+                        <Phone className="w-5 h-5" />
+                    </div>
+                    <span className="font-bold text-base tracking-wide">Start Call</span>
                 </div>
                 
                 {/* Phone Number Selector */}
-                <div className="bg-white rounded-md">
+                <div className="bg-white rounded-lg shadow-sm">
                     <Select 
                         value={data.selectedPhoneNumberId} 
                         onValueChange={data.onPhoneNumberChange}
                     >
-                        <SelectTrigger className="w-full border-0 focus:ring-2 focus:ring-emerald-300">
+                        <SelectTrigger className="w-full border-0 focus:ring-2 focus:ring-emerald-300 h-10">
                             <SelectValue placeholder="Select phone number..." />
                         </SelectTrigger>
                         <SelectContent>
@@ -244,8 +256,53 @@ function StartCallNode({ data }: { data: StartCallNodeData }) {
     );
 }
 
+// Custom Agent Node Component
+function AgentNode({ data }: { data: AgentNodeData }) {
+    return (
+        <div className="bg-white rounded-xl shadow-lg border-2 border-blue-200 min-w-[260px] hover:shadow-xl hover:border-blue-400 transition-all group relative">
+            <Handle 
+                type="target" 
+                position={Position.Top} 
+                className="!bg-blue-500 !w-3.5 !h-3.5 !border-2 !border-white hover:!w-4 hover:!h-4 transition-all" 
+            />
+            <div className="px-5 py-5 relative">
+                <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg shadow-md group-hover:scale-110 transition-transform">
+                        <Bot className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-gray-900 truncate">{data.label}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">AI Agent</p>
+                    </div>
+                </div>
+                <Link 
+                    href={`/app/agents/${data.agentId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="nodrag nopan absolute top-1/2 -translate-y-1/2 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 w-8 p-0 flex items-center justify-center bg-blue-50/40 hover:bg-blue-100/70 text-blue-600 border border-blue-200/40 hover:border-blue-300/60 rounded-lg transition-all group/btn"
+                    >
+                        <ExternalLink className="w-4 h-4 opacity-60 group-hover/btn:opacity-100 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-all" />
+                    </Button>
+                </Link>
+            </div>
+            <Handle 
+                type="source" 
+                position={Position.Bottom} 
+                className="!bg-blue-500 !w-3.5 !h-3.5 !border-2 !border-white hover:!w-4 hover:!h-4 transition-all" 
+            />
+        </div>
+    );
+}
+
 const nodeTypes = {
     startCall: StartCallNode,
+    agent: AgentNode,
 };
 
 const edgeTypes = {
@@ -331,13 +388,13 @@ export default function Orchestrate({ orchestrationId, agents, phoneNumbers, wor
         // Build a map of agent platform_id to agent data
         const agentMap = new Map(agents.map(a => [a.platform_id, a]));
         
-        // Layout configuration - generous spacing!
-        const nodeWidth = 220;
-        const nodeHeight = 100;
-        const verticalSpacing = 300;   // Much more vertical space between levels
-        const horizontalSpacing = 400; // Much more horizontal space between nodes
+        // Layout configuration - generous spacing to prevent overlapping!
+        const nodeWidth = 280;
+        const nodeHeight = 120;
+        const verticalSpacing = 350;   // Much more vertical space between levels
+        const horizontalSpacing = 450; // Much more horizontal space between nodes
         const startX = 600;            // Start further right
-        const startY = 250;            // Start further down
+        const startY = 300;            // Start further down
         
         // Build adjacency list (who points to whom)
         const graph = new Map<string, string[]>();
@@ -403,10 +460,20 @@ export default function Orchestrate({ orchestrationId, agents, phoneNumbers, wor
             nodesByLevel.get(level)!.push(nodeId);
         });
         
-        // Calculate positions for each level
+        // Calculate positions for each level - spread nodes out more evenly
         nodesByLevel.forEach((nodesInLevel, level) => {
+            // Calculate total width needed for this level
             const totalWidth = nodesInLevel.length * nodeWidth + (nodesInLevel.length - 1) * horizontalSpacing;
-            const startXForLevel = startX - totalWidth / 2;
+            
+            // Center the level horizontally
+            let startXForLevel;
+            if (nodesInLevel.length === 1) {
+                // Single node - center it
+                startXForLevel = startX - nodeWidth / 2;
+            } else {
+                // Multiple nodes - spread them out evenly
+                startXForLevel = startX - totalWidth / 2;
+            }
             
             nodesInLevel.forEach((nodeId, index) => {
                 const x = startXForLevel + index * (nodeWidth + horizontalSpacing);
@@ -428,16 +495,10 @@ export default function Orchestrate({ orchestrationId, agents, phoneNumbers, wor
             loadedNodes.push({
                 id: agent.id,
                 position,
+                type: 'agent',
                 data: { 
-                    label: agent.data?.name
-                },
-                style: {
-                    background: '#ffffff',
-                    border: '2px solid #e5e7eb',
-                    borderRadius: '8px',
-                    padding: '12px 20px',
-                    fontSize: '14px',
-                    fontWeight: '500',
+                    label: agent.data?.name,
+                    agentId: agent.id
                 },
                 sourcePosition: Position.Bottom,
                 targetPosition: Position.Top,
@@ -595,17 +656,11 @@ export default function Orchestrate({ orchestrationId, agents, phoneNumbers, wor
         if (agent) {
           const newNode = { 
             id: agentId, 
-            position: { x: 250, y: 200 + (nodes.length - 1) * 100 }, 
+            position: { x: 300 + (nodes.length - 1) * 350, y: 500 }, 
+            type: 'agent',
             data: { 
-              label: agent.data?.name
-            },
-            style: {
-              background: '#ffffff',
-              border: '2px solid #e5e7eb',
-              borderRadius: '8px',
-              padding: '12px 20px',
-              fontSize: '14px',
-              fontWeight: '500',
+              label: agent.data?.name,
+              agentId: agent.id
             },
             sourcePosition: Position.Bottom,
             targetPosition: Position.Top,
@@ -743,10 +798,15 @@ export default function Orchestrate({ orchestrationId, agents, phoneNumbers, wor
     }, [hasUnsavedChanges, handleSave, router]);
 
     return (
-        <div className="w-full h-full flex flex-col bg-gray-50">
+        <div className="w-full h-full flex flex-col bg-gradient-to-br from-gray-50 to-blue-50/30">
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200">
-                <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between px-6 py-5 bg-white border-b-2 border-gray-200 shadow-sm">
+                <div className="flex items-center gap-3">
+                    {/* Icon */}
+                    <div className="p-2.5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-md">
+                        <Workflow className="w-6 h-6 text-white" />
+                    </div>
+                    
                     {/* Editable Name */}
                     {isEditingName ? (
                         <div className="flex items-center gap-2">
@@ -756,31 +816,39 @@ export default function Orchestrate({ orchestrationId, agents, phoneNumbers, wor
                                 onChange={(e) => setTempName(e.target.value)}
                                 onKeyDown={handleNameKeyDown}
                                 onBlur={confirmNameChange}
-                                className="text-2xl font-semibold h-10 px-2"
+                                className="text-2xl font-bold h-11 px-3 border-2 border-blue-500 focus:border-blue-600"
                                 placeholder="Enter orchestration name"
                             />
                             <Button
                                 size="sm"
                                 variant="ghost"
                                 onClick={confirmNameChange}
-                                className="h-8 w-8 p-0"
+                                className="h-9 w-9 p-0 hover:bg-green-50"
                             >
-                                <Check className="w-4 h-4 text-green-600" />
+                                <Check className="w-5 h-5 text-green-600" />
                             </Button>
                         </div>
                     ) : (
                         <div className="flex items-center gap-2 group">
-                            <h1 className="text-2xl font-semibold text-gray-900">
+                            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
                                 {orchestrationName}
                             </h1>
                             <Button
                                 size="sm"
                                 variant="ghost"
                                 onClick={startEditingName}
-                                className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-100"
                             >
                                 <Pencil className="w-4 h-4 text-gray-500" />
                             </Button>
+                        </div>
+                    )}
+                    
+                    {/* Unsaved indicator */}
+                    {hasUnsavedChanges && (
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-full">
+                            <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
+                            <span className="text-xs font-medium text-amber-700">Unsaved changes</span>
                         </div>
                     )}
                 </div>
@@ -795,10 +863,10 @@ export default function Orchestrate({ orchestrationId, agents, phoneNumbers, wor
                             }
                         }}
                     >
-                        <SelectTrigger className="w-[200px]">
+                        <SelectTrigger className="w-[220px] h-10 border-2 hover:border-blue-400 transition-colors">
                             <div className="flex items-center gap-2">
                                 <Plus className="w-4 h-4" />
-                                <SelectValue placeholder="Add Agent" />
+                                <SelectValue placeholder="Add Agent to Flow" />
                             </div>
                         </SelectTrigger>
                         <SelectContent>
@@ -820,23 +888,23 @@ export default function Orchestrate({ orchestrationId, agents, phoneNumbers, wor
                     </Select>
 
                     {/* Divider */}
-                    <div className="h-8 w-px bg-gray-200" />
+                    <div className="h-8 w-px bg-gray-300" />
 
                     {/* Save Button */}
                     <Button 
                         variant="default" 
-                        className="flex items-center gap-2"
+                        className="flex items-center gap-2 h-10 px-5 bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg transition-all"
                         onClick={handleSave}
-                        disabled={isSaving}
+                        disabled={isSaving || !hasUnsavedChanges}
                     >
                         <Save className="w-4 h-4" />
-                        {isSaving ? 'Saving...' : 'Save'}
+                        {isSaving ? 'Saving...' : 'Save Workflow'}
                     </Button>
 
                     {/* Exit Button */}
                     <Button 
                         variant="outline" 
-                        className="flex items-center gap-2"
+                        className="flex items-center gap-2 h-10 px-4 border-2 hover:bg-gray-50 transition-all"
                         onClick={handleExit}
                         disabled={isSaving}
                     >
@@ -857,11 +925,26 @@ export default function Orchestrate({ orchestrationId, agents, phoneNumbers, wor
                     onEdgesChange={onEdgesChange}
                     onConnect={onConnect}
                     fitView
-                    className="bg-gray-50"
+                    snapToGrid={true}
+                    snapGrid={[15, 15]}
+                    defaultEdgeOptions={{
+                        type: 'smoothstep',
+                    }}
+                    minZoom={0.2}
+                    maxZoom={1.5}
+                    className="bg-gradient-to-br from-gray-50 to-blue-50/30"
                 >
-                    <Background color="#e5e7eb" gap={16} />
-                    <Controls />
-                    <MiniMap className="!bg-white !border-gray-200" />
+                    <Background color="#cbd5e1" gap={20} size={1.5} />
+                    <Controls className="!bg-white !border-2 !border-gray-200 !shadow-lg !rounded-lg" />
+                    <MiniMap 
+                        className="!bg-white !border-2 !border-gray-200 !shadow-lg !rounded-lg" 
+                        nodeColor={(node) => {
+                            if (node.type === 'startCall') return '#10b981';
+                            if (node.type === 'agent') return '#3b82f6';
+                            return '#e5e7eb';
+                        }}
+                        maskColor="rgba(240, 240, 255, 0.6)"
+                    />
                 </ReactFlow>
                 <style jsx global>{`
                     .react-flow__handle {
@@ -881,6 +964,22 @@ export default function Orchestrate({ orchestrationId, agents, phoneNumbers, wor
                     }
                     .react-flow__node:active {
                         cursor: grabbing;
+                    }
+                    .react-flow__edge-path {
+                        transition: stroke 0.2s ease;
+                    }
+                    .react-flow__edge:hover .react-flow__edge-path {
+                        stroke-width: 3 !important;
+                    }
+                    .react-flow__controls button {
+                        border-bottom: 1px solid #e5e7eb !important;
+                        transition: all 0.2s ease !important;
+                    }
+                    .react-flow__controls button:hover {
+                        background: #f3f4f6 !important;
+                    }
+                    .react-flow__minimap {
+                        border-radius: 0.5rem !important;
                     }
                 `}</style>
             </div>
