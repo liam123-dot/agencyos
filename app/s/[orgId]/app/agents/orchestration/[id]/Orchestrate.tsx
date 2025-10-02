@@ -98,6 +98,27 @@ function CustomEdge({
         borderRadius: 8,
     });
 
+    // Position the label on the edge path, centered between source and target
+    // For vertical edges (Top/Bottom target), use target's X and midpoint Y
+    // For horizontal edges (Left/Right target), use target's Y and midpoint X
+    let anchorX = labelX;
+    let anchorY = labelY;
+    
+    switch (targetPosition) {
+        case Position.Top:
+        case Position.Bottom:
+            // Vertical edge: align horizontally with target, use edge's vertical midpoint
+            anchorX = targetX;
+            anchorY = labelY;
+            break;
+        case Position.Left:
+        case Position.Right:
+            // Horizontal edge: align vertically with target, use edge's horizontal midpoint
+            anchorX = labelX;
+            anchorY = targetY;
+            break;
+    }
+
     const [isEditing, setIsEditing] = useState(false);
     const [description, setDescription] = useState(data?.description || '');
     const [message, setMessage] = useState(data?.message || '');
@@ -126,7 +147,7 @@ function CustomEdge({
                 <div
                     style={{
                         position: 'absolute',
-                        transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+                        transform: `translate(-50%, -50%) translate(${anchorX}px, ${anchorY}px)`,
                         pointerEvents: 'all',
                     }}
                     className="nodrag nopan"

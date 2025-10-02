@@ -85,7 +85,7 @@ const navigationSections: NavigationSection[] = [
       },
       {
         title: "Agents",
-        description: "Assignment & status",
+        description: "Manage Agents and Workflows",
         url: "/app/agents",
         icon: Bot,
       },
