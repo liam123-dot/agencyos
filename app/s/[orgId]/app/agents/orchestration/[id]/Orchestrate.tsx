@@ -975,6 +975,7 @@ export default function Orchestrate({ orchestrationId, agents, phoneNumbers, wor
                     onNodesChange={onNodesChange}
                     onEdgesChange={onEdgesChange}
                     onConnect={onConnect}
+                    connectionRadius={100}
                     fitView
                     snapToGrid={true}
                     snapGrid={[15, 15]}
