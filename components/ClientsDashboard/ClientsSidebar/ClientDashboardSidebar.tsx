@@ -150,7 +150,7 @@ export function ClientDashboardSidebar({ user, orgId, clientId, organizationName
   const displayName = user.user_metadata?.full_name || user.email?.split("@")[0] || user.email || 'Account';
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" className={cn(isCollapsed && "w-20")}>
       <SidebarHeader className="border-b border-sidebar-border">
         <SidebarMenu>
           <SidebarMenuItem>
@@ -194,6 +194,10 @@ export function ClientDashboardSidebar({ user, orgId, clientId, organizationName
                   const isActive = item.exact
                     ? pathname === pathUrl
                     : pathname === pathUrl || pathname.startsWith(`${pathUrl}/`);
+                  // Hide Settings button when collapsed
+                  if (isCollapsed && item.title === 'Settings') {
+                    return null;
+                  }
                   return (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton
@@ -238,10 +242,10 @@ export function ClientDashboardSidebar({ user, orgId, clientId, organizationName
         ))}
       </SidebarContent>
       
-      <SidebarFooter className="border-t border-sidebar-border">
+      <SidebarFooter>
         <div
           className={cn(
-            "flex items-center gap-3 rounded-lg border border-sidebar-border bg-sidebar-accent/20 px-3 py-3 transition-all",
+            "flex items-center gap-3 rounded-lg bg-sidebar-accent/20 px-3 py-3 transition-all",
             isCollapsed && "justify-center px-2 py-2"
           )}
         >
