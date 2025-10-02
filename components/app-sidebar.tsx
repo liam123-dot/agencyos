@@ -36,8 +36,8 @@ const menuItems = [
     icon: Home,
   },
   {
-    title: 'Analytics',
-    url: "/app/analytics",
+    title: 'Configuration',
+    url: "/app/configuration",
     icon: BarChart3,
   },
   {

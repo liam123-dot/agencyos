@@ -1,19 +1,9 @@
-import StripeComponent from "@/components/organizations/StripeSetup/StripeComponent";
-import VapiComponent from "@/components/organizations/VapiSetup/VapiComponent";
-import { BrandingServer } from "@/components/organizations/branding";
-import ConnectDomainComponent from "@/components/organizations/domain/ConnectDomainComponent";
+import { AnalyticsCallsComponent } from "@/components/analytics/AnalyticsCallsComponent"
 
-
-export default function DashboardPage() {
-  return (
-    <div className="container py-8">
-      <div className="max-w-4xl mx-auto">
-        
-          <VapiComponent />
-          <StripeComponent />
-          <BrandingServer/>
-
-      </div>
-    </div>
-  )
+export default function AnalyticsPage() {
+    return (
+        <div className="container mx-auto p-6 space-y-6">
+            <AnalyticsCallsComponent />
+        </div>
+    )
 }
