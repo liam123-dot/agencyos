@@ -1382,7 +1382,7 @@ export function AnalyticsCallsComponent() {
                                                                         </button>
                                                                     </PopoverTrigger>
                                                                     <PopoverContent align="end" className="w-auto p-4">
-                                                                        <CostBreakdown costs={call.data.costs} currency={call.currency} />
+                                                                        <CostBreakdown costs={call.data.costs} currency="USD" />
                                                                     </PopoverContent>
                                                                 </Popover>
                                                             )}
