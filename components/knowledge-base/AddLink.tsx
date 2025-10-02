@@ -1,13 +1,12 @@
 'use client'
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { X, Plus, Link as LinkIcon, Loader2, AlertCircle } from "lucide-react"
+import { X, Plus, Link as LinkIcon, Loader2, AlertCircle, CheckCircle2 } from "lucide-react"
 import { toast } from "sonner"
-import { addMultipleWebsiteKnowledge } from "@/app/api/knowledge-base/addKnowledge"
+import { addMultipleWebsiteKnowledge, getKnowledge } from "@/app/api/knowledge-base/addKnowledge"
 import { WebsiteKnowledge, WebsiteKnowledgeDTO } from "@/lib/types/knowledge"
 import { mapWebsite } from "@/app/api/knowledge-base/firecrawl"
 
@@ -28,6 +27,26 @@ export function AddLink({ onSuccess, knowledgeBaseId }: AddLinkProps) {
     const [urlList, setUrlList] = useState<URLItem[]>([])
     const [scrapeLoading, setScrapeLoading] = useState(false)
     const [addingAll, setAddingAll] = useState(false)
+    const [storedKnowledge, setStoredKnowledge] = useState<WebsiteKnowledge[]>([])
+    const [loadingStored, setLoadingStored] = useState(true)
+
+    useEffect(() => {
+        const fetchStoredKnowledge = async () => {
+            try {
+                setLoadingStored(true)
+                const knowledge = await getKnowledge(knowledgeBaseId)
+                // Filter for website type knowledge only
+                const websiteKnowledge = knowledge.filter(item => item.type === 'website') as WebsiteKnowledge[]
+                setStoredKnowledge(websiteKnowledge)
+            } catch (error) {
+                console.error('Error fetching stored knowledge:', error)
+            } finally {
+                setLoadingStored(false)
+            }
+        }
+        
+        fetchStoredKnowledge()
+    }, [knowledgeBaseId])
 
     const normalizeUrl = (raw: string): string | null => {
         try {
@@ -209,8 +228,13 @@ export function AddLink({ onSuccess, knowledgeBaseId }: AddLinkProps) {
                 toast.dismiss(toastId)
                 toast.success(`Successfully added all ${pendingUrls.length} URLs to knowledge base`)
                 
-                // Clear the URL list to close the accordion
+                // Clear the URL list
                 setUrlList([])
+                
+                // Refresh stored knowledge
+                const knowledge = await getKnowledge(knowledgeBaseId)
+                const websiteKnowledge = knowledge.filter(item => item.type === 'website') as WebsiteKnowledge[]
+                setStoredKnowledge(websiteKnowledge)
                 
                 if (onSuccess) {
                     onSuccess()
@@ -255,148 +279,189 @@ export function AddLink({ onSuccess, knowledgeBaseId }: AddLinkProps) {
     }
 
     return (
-        <Card className="w-full max-w-4xl mx-auto">
-            <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                    Add websites to your knowledge base
-                    {urlList.length > 0 && (
-                        <Badge variant="secondary" className="ml-2">
-                            {urlList.length} URL{urlList.length !== 1 ? 's' : ''}
-                        </Badge>
+        <div className="space-y-4">
+            {urlList.length > 0 && (
+                <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">URLs in queue:</span>
+                    <Badge variant="secondary">
+                        {urlList.length} URL{urlList.length !== 1 ? 's' : ''}
+                    </Badge>
+                </div>
+            )}
+            
+            {/* URL Input Section */}
+            <div className="flex space-x-2">
+                <Input
+                    type="url"
+                    placeholder="https://example.com"
+                    value={inputUrl}
+                    onChange={(e) => setInputUrl(e.target.value)}
+                    disabled={scrapeLoading || addingAll}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault()
+                            addUrlToList()
+                        }
+                    }}
+                />
+                <Button 
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={addUrlToList}
+                    disabled={!inputUrl.trim() || scrapeLoading || addingAll}
+                >
+                    <Plus className="h-4 w-4" />
+                </Button>
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="flex space-x-2">
+                <Button 
+                    type="button"
+                    variant="outline"
+                    onClick={handleScrape}
+                    disabled={!inputUrl.trim() || scrapeLoading || addingAll}
+                    className="flex-1"
+                >
+                    {scrapeLoading ? (
+                        <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Scraping...
+                        </>
+                    ) : (
+                        'Scrape & Add Links'
                     )}
-                </CardTitle>
-            </CardHeader>
-            <CardContent>
-                <div className="space-y-4 max-w-full">
-                    {/* URL Input Section */}
-                    <div className="flex space-x-2">
-                        <Input
-                            type="url"
-                            placeholder="https://example.com"
-                            value={inputUrl}
-                            onChange={(e) => setInputUrl(e.target.value)}
-                            disabled={scrapeLoading || addingAll}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                    e.preventDefault()
-                                    addUrlToList()
-                                }
-                            }}
-                        />
-                        <Button 
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            onClick={addUrlToList}
-                            disabled={!inputUrl.trim() || scrapeLoading || addingAll}
-                        >
-                            <Plus className="h-4 w-4" />
-                        </Button>
-                    </div>
-                    
-                    {/* Action Buttons */}
-                    <div className="flex space-x-2">
-                        <Button 
-                            type="button"
-                            variant="outline"
-                            onClick={handleScrape}
-                            disabled={!inputUrl.trim() || scrapeLoading || addingAll}
-                            className="flex-1"
-                        >
-                            {scrapeLoading ? (
-                                <>
-                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                    Scraping...
-                                </>
-                            ) : (
-                                'Scrape & Add Links'
-                            )}
-                        </Button>
-                        
-                        {urlList.length > 0 && (
-                            <Button 
-                                type="button"
-                                variant="outline"
-                                onClick={clearAllUrls}
-                                disabled={addingAll}
-                            >
-                                Clear All
-                            </Button>
-                        )}
-                    </div>
+                </Button>
+                
+                {urlList.length > 0 && (
+                    <Button 
+                        type="button"
+                        variant="outline"
+                        onClick={clearAllUrls}
+                        disabled={addingAll}
+                    >
+                        Clear All
+                    </Button>
+                )}
+            </div>
 
-                    {/* URL List */}
-                    {urlList.length > 0 && (
-                        <div className="space-y-4">
-                            <div className="border rounded-lg">
-                                <div className="p-3 border-b bg-gray-50">
-                                    <h4 className="text-sm font-medium">URLs to Add</h4>
-                                </div>
-                                <div className="max-h-[50vh] overflow-y-auto">
-                                    <div className="p-2 space-y-2">
-                                        {urlList.map((urlItem) => (
-                                            <div key={urlItem.id} className="flex items-center justify-between p-2 border rounded-md hover:bg-gray-50 min-w-0">
-                                                <div className="flex items-center space-x-2 flex-1 min-w-0 overflow-hidden">
-                                                    {/* <Badge 
-                                                        variant="secondary" 
-                                                        className={`${getStatusColor(urlItem.status)} flex items-center space-x-1 shrink-0`}
-                                                    >
-                                                        {getStatusIcon(urlItem.status)}
-                                                        <span className="text-xs capitalize">{urlItem.status}</span>
-                                                    </Badge> */}
-                                                    <span className="text-sm truncate flex-1 min-w-0" title={urlItem.url}>
-                                                        {urlItem.url}
+            {/* URL List */}
+            {urlList.length > 0 && (
+                <div className="space-y-4">
+                    <div className="border rounded-lg">
+                        <div className="p-3 border-b bg-gray-50">
+                            <h4 className="text-sm font-medium">URLs to Add</h4>
+                        </div>
+                        <div className="max-h-[50vh] overflow-y-auto">
+                            <div className="p-2 space-y-2">
+                                {urlList.map((urlItem) => (
+                                    <div key={urlItem.id} className="flex items-center justify-between p-2 border rounded-md hover:bg-gray-50 gap-2">
+                                        <div className="flex items-center space-x-2 flex-1 min-w-0">
+                                            <span className="text-sm overflow-x-auto whitespace-nowrap flex-1 min-w-0 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent" title={urlItem.url}>
+                                                {urlItem.url}
+                                            </span>
+                                            {urlItem.error && (
+                                                <div className="flex items-center shrink-0">
+                                                    <AlertCircle className="h-3 w-3 text-red-500 mr-1" />
+                                                    <span className="text-xs text-red-600 hidden sm:inline" title={urlItem.error}>
+                                                        Error
                                                     </span>
-                                                    {urlItem.error && (
-                                                        <div className="flex items-center shrink-0">
-                                                            <AlertCircle className="h-3 w-3 text-red-500 mr-1" />
-                                                            <span className="text-xs text-red-600 hidden sm:inline" title={urlItem.error}>
-                                                                Error
-                                                            </span>
-                                                        </div>
-                                                    )}
                                                 </div>
-                                                {urlItem.status !== 'processing' && (
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => removeUrl(urlItem.id)}
-                                                        disabled={addingAll}
-                                                        className="shrink-0 ml-2 p-1"
-                                                    >
-                                                        <X className="h-3 w-3" />
-                                                    </Button>
-                                                )}
-                                            </div>
-                                        ))}
+                                            )}
+                                        </div>
+                                        {urlItem.status !== 'processing' && (
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => removeUrl(urlItem.id)}
+                                                disabled={addingAll}
+                                                className="shrink-0 p-1"
+                                            >
+                                                <X className="h-3 w-3" />
+                                            </Button>
+                                        )}
                                     </div>
-                                </div>
-                            </div>
-                            
-                            {/* Add All Button */}
-                            <div className="flex justify-center">
-                                <Button 
-                                    type="button"
-                                    onClick={handleAddAll}
-                                    disabled={addingAll || urlList.filter(item => item.status === 'pending').length === 0}
-                                    className="w-full max-w-md"
-                                    size="lg"
-                                >
-                                    {addingAll ? (
-                                        <>
-                                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                            Adding All URLs...
-                                        </>
-                                    ) : (
-                                        `Add All URLs (${urlList.filter(item => item.status === 'pending').length} pending)`
-                                    )}
-                                </Button>
+                                ))}
                             </div>
                         </div>
-                    )}
+                    </div>
+                    
+                    {/* Add All Button */}
+                    <div className="flex justify-center">
+                        <Button 
+                            type="button"
+                            onClick={handleAddAll}
+                            disabled={addingAll || urlList.filter(item => item.status === 'pending').length === 0}
+                            className="w-full max-w-md"
+                            size="lg"
+                        >
+                            {addingAll ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    Adding All URLs...
+                                </>
+                            ) : (
+                                `Add All URLs (${urlList.filter(item => item.status === 'pending').length} pending)`
+                            )}
+                        </Button>
+                    </div>
                 </div>
-            </CardContent>
-        </Card>
+            )}
+
+            {/* Stored Website Knowledge */}
+            <div className="mt-8 pt-6 border-t">
+                <h3 className="text-sm font-medium mb-3">Stored Website Knowledge</h3>
+                {loadingStored ? (
+                    <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    </div>
+                ) : storedKnowledge.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-8">
+                        No website knowledge stored yet. Add URLs above to get started.
+                    </p>
+                ) : (
+                    <div className="border rounded-lg">
+                        <div className="max-h-[40vh] overflow-y-auto">
+                            <div className="divide-y">
+                                {storedKnowledge.map((item) => (
+                                    <div key={item.id} className="flex items-center gap-3 p-3 hover:bg-muted/30 transition-colors">
+                                        <div className="shrink-0">
+                                            {item.status === 'succeeded' ? (
+                                                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                            ) : item.status === 'processing' || item.status === 'processing-ragie' || item.status === 'pending' ? (
+                                                <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                                            ) : item.status === 'failed' ? (
+                                                <AlertCircle className="h-4 w-4 text-red-600" />
+                                            ) : (
+                                                <LinkIcon className="h-4 w-4 text-gray-400" />
+                                            )}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="text-sm font-medium truncate" title={item.title || item.url}>
+                                                {item.title || item.url || 'Untitled'}
+                                            </div>
+                                            {item.url && (
+                                                <div className="text-xs text-muted-foreground overflow-x-auto whitespace-nowrap scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent" title={item.url}>
+                                                    {item.url}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <Badge variant={
+                                            item.status === 'succeeded' ? 'default' :
+                                            item.status === 'failed' ? 'destructive' :
+                                            'secondary'
+                                        } className="shrink-0 text-xs">
+                                            {item.status === 'processing-ragie' ? 'processing' : item.status}
+                                        </Badge>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
     )
 }

@@ -1,5 +1,7 @@
+'use client'
 
 import { TableCell, TableRow } from "@/components/ui/table"
+import { useParams } from "next/navigation"
 import Link from "next/link"
 
 interface KnowledgeBase {
@@ -16,10 +18,12 @@ interface KnowledgeBaseRowProps {
 }
 
 export function KnowledgeBaseRow({ knowledgeBase }: KnowledgeBaseRowProps) {
+    const params = useParams()
+    const orgId = params.orgId as string
     const href = `/app/knowledge-base/${knowledgeBase.id}`
 
     return (
-        <TableRow className="group relative hover:bg-muted/50 transition-colors">
+        <TableRow className="group relative hover:bg-muted/50 transition-colors cursor-pointer">
             <TableCell className="font-medium">
                 <Link 
                     href={href}
@@ -29,10 +33,10 @@ export function KnowledgeBaseRow({ knowledgeBase }: KnowledgeBaseRowProps) {
                     {knowledgeBase.name}
                 </Link>
             </TableCell>
-            <TableCell className="text-sm text-muted-foreground">
+            <TableCell>
                 {new Date(knowledgeBase.created_at).toLocaleDateString()}
             </TableCell>
-            <TableCell className="text-sm text-muted-foreground">
+            <TableCell>
                 {new Date(knowledgeBase.updated_at).toLocaleDateString()}
             </TableCell>
         </TableRow>

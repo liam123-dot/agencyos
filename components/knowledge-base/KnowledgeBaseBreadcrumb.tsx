@@ -1,6 +1,6 @@
 'use client'
 
-import { useRouter } from "next/navigation"
+import { useRouter, useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { ChevronRight } from "lucide-react"
 
@@ -10,13 +10,15 @@ interface KnowledgeBaseBreadcrumbProps {
 
 export function KnowledgeBaseBreadcrumb({ knowledgeBaseName }: KnowledgeBaseBreadcrumbProps) {
     const router = useRouter()
+    const params = useParams()
+    const orgId = params.orgId as string
 
     const handleBackClick = () => {
         router.push(`/app/knowledge-base`)
     }
 
     return (
-        <nav className="flex items-center space-x-2 text-sm text-muted-foreground mb-6">
+        <nav className="flex items-center space-x-2 text-sm text-muted-foreground">
             <Button 
                 variant="ghost" 
                 onClick={handleBackClick}

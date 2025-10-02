@@ -22,55 +22,51 @@ export function KnowledgeOverview({ knowledge, onDelete, isLoading = false, isCh
     if (isLoading) {
         return (
             <Card>
-                <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <CardTitle className="flex items-center gap-2">
-                            <FileText className="h-5 w-5" />
-                            Knowledge Base Contents
-                        </CardTitle>
-                        {isCheckingStatus && (
-                            <Badge variant="outline" className="flex items-center gap-2">
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                                Checking status
-                            </Badge>
-                        )}
-                    </div>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                    <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                        <FileText className="h-4 w-4" />
+                        Knowledge Base Contents
+                    </CardTitle>
+                    {isCheckingStatus && (
+                        <Badge variant="outline" className="flex items-center gap-2">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            Checking status
+                        </Badge>
+                    )}
                 </CardHeader>
                 <CardContent>
-                    <div className="overflow-x-auto">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead className="w-12">Type</TableHead>
-                                    <TableHead className="min-w-[200px]">Name</TableHead>
-                                    <TableHead className="min-w-[120px]">Status</TableHead>
-                                    <TableHead className="w-24">Added</TableHead>
-                                    <TableHead className="w-20">Actions</TableHead>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="w-12">Type</TableHead>
+                                <TableHead>Name</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead>Added</TableHead>
+                                <TableHead className="w-24">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {Array.from({ length: 3 }).map((_, index) => (
+                                <TableRow key={index}>
+                                    <TableCell>
+                                        <Skeleton className="h-4 w-4 rounded" />
+                                    </TableCell>
+                                    <TableCell>
+                                        <Skeleton className="h-4 w-[180px]" />
+                                    </TableCell>
+                                    <TableCell>
+                                        <Skeleton className="h-6 w-20 rounded-full" />
+                                    </TableCell>
+                                    <TableCell>
+                                        <Skeleton className="h-4 w-16" />
+                                    </TableCell>
+                                    <TableCell>
+                                        <Skeleton className="h-8 w-8 rounded" />
+                                    </TableCell>
                                 </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {Array.from({ length: 3 }).map((_, index) => (
-                                    <TableRow key={index}>
-                                        <TableCell>
-                                            <Skeleton className="h-4 w-4 rounded" />
-                                        </TableCell>
-                                        <TableCell>
-                                            <Skeleton className="h-4 w-[180px]" />
-                                        </TableCell>
-                                        <TableCell>
-                                            <Skeleton className="h-6 w-20 rounded-full" />
-                                        </TableCell>
-                                        <TableCell>
-                                            <Skeleton className="h-4 w-16" />
-                                        </TableCell>
-                                        <TableCell>
-                                            <Skeleton className="h-8 w-8 rounded" />
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </div>
+                            ))}
+                        </TableBody>
+                    </Table>
                 </CardContent>
             </Card>
         )
@@ -79,25 +75,23 @@ export function KnowledgeOverview({ knowledge, onDelete, isLoading = false, isCh
     if (knowledge.length === 0) {
         return (
             <Card>
-                <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <CardTitle className="flex items-center gap-2">
-                            <FileText className="h-5 w-5" />
-                            Knowledge Base Contents
-                        </CardTitle>
-                        {isCheckingStatus && (
-                            <Badge variant="outline" className="flex items-center gap-2">
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                                Checking status
-                            </Badge>
-                        )}
-                    </div>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                    <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                        <FileText className="h-4 w-4" />
+                        Knowledge Base Contents (0 items)
+                    </CardTitle>
+                    {isCheckingStatus && (
+                        <Badge variant="outline" className="flex items-center gap-2">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            Checking status
+                        </Badge>
+                    )}
                 </CardHeader>
                 <CardContent>
-                    <div className="text-center py-8">
+                    <div className="text-center py-12">
                         <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                        <p className="text-muted-foreground">No knowledge items yet</p>
-                        <p className="text-sm text-muted-foreground mt-1">Add your first website, file, or text above</p>
+                        <p className="text-muted-foreground font-medium">No knowledge items yet</p>
+                        <p className="text-sm text-muted-foreground mt-1">Connect an integration or manually add content above</p>
                     </div>
                 </CardContent>
             </Card>
@@ -106,43 +100,39 @@ export function KnowledgeOverview({ knowledge, onDelete, isLoading = false, isCh
 
     return (
         <Card>
-            <CardHeader>
-                <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2">
-                        <FileText className="h-5 w-5" />
-                        Knowledge Base Contents ({knowledge.length} items)
-                    </CardTitle>
-                    {isCheckingStatus && (
-                        <Badge variant="outline" className="flex items-center gap-2">
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                            Checking status
-                        </Badge>
-                    )}
-                </div>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                    <FileText className="h-4 w-4" />
+                    Knowledge Base Contents ({knowledge.length} {knowledge.length === 1 ? 'item' : 'items'})
+                </CardTitle>
+                {isCheckingStatus && (
+                    <Badge variant="outline" className="flex items-center gap-2">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        Checking status
+                    </Badge>
+                )}
             </CardHeader>
             <CardContent>
-                <div className="overflow-x-auto">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-12">Type</TableHead>
-                                <TableHead className="min-w-[200px]">Name</TableHead>
-                                <TableHead className="min-w-[120px]">Status</TableHead>
-                                <TableHead className="w-24">Added</TableHead>
-                                <TableHead className="w-20">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {knowledge.map((item) => (
-                                <KnowledgeItemRow
-                                    key={item.id}
-                                    knowledge={item}
-                                    onDelete={onDelete}
-                                />
-                            ))}
-                        </TableBody>
-                    </Table>
-                </div>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead className="w-12">Type</TableHead>
+                            <TableHead>Name</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Added</TableHead>
+                            <TableHead className="w-24">Actions</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {knowledge.map((item) => (
+                            <KnowledgeItemRow
+                                key={item.id}
+                                knowledge={item}
+                                onDelete={onDelete}
+                            />
+                        ))}
+                    </TableBody>
+                </Table>
             </CardContent>
         </Card>
     )

@@ -13,8 +13,6 @@ export async function POST(request: Request, {params}: {params: Promise<{id: str
     const body = await request.json()
 
 
-    const supabaseServerClient = await createServerClient()
-
     const message = body.message;
     
     if (message.type !== "knowledge-base-request") {
@@ -33,21 +31,25 @@ export async function POST(request: Request, {params}: {params: Promise<{id: str
 
     const response = await ragie.retrievals.retrieve({
         query,
-        filter: {
-            knowledge_base_id: id
-        }
+        partition: id
     })
+
+    console.log('response is', response)
     /*
      response comes as list of documents, each document has chunks, each of which has a content and a score.
      first, split out the response into chunks
     */
 
-    const chunks = response.scoredChunks.map((chunk: any) => {
+    const documents = response.scoredChunks.map((chunk: any) => {
         return {
-            content: chunk.text
+            content: chunk.text,
+            similarity: chunk.score,
+            uuid: chunk.id
         }
     })
 
-    return NextResponse.json(chunks)
+    console.log('documents are', documents)
+
+    return NextResponse.json({ documents })
 
 }

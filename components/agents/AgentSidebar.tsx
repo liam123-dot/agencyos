@@ -8,11 +8,11 @@ import { ChevronLeft, Bot, FileText, Rocket, Hammer, Phone, Book } from "lucide-
 import { TestAgentButton } from "./TestAgentButton";
 
 const menuItems = [
-    {
-      title: 'Overview',
-      url: (orgId: string, agentId: string, baseUrl: string, queryString: string) => `${baseUrl}/app/agents/${agentId}${queryString}`,
-      icon: Bot,
-    },
+    // {
+    //   title: 'Overview',
+    //   url: (orgId: string, agentId: string, baseUrl: string, queryString: string) => `${baseUrl}/app/agents/${agentId}${queryString}`,
+    //   icon: Bot,
+    // },
     {
       title: 'Configuration',
       url: (orgId: string, agentId: string, baseUrl: string, queryString: string) => `${baseUrl}/app/agents/${agentId}/configuration${queryString}`,

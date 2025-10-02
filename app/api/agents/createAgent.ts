@@ -1,6 +1,5 @@
 'use server'
 
-import { clientDashboardAuth } from "../clients/clientDashboardAuth"
 import { VapiClient } from "@vapi-ai/server-sdk"
 import { assignVapiAgentToClient } from "./assignAgentToClient"
 import { revalidatePath } from "next/cache"
@@ -26,7 +25,20 @@ export async function createAgent(name: string, clientId?: string) {
             },
             firstMessage: 'Hello, how can I help you today?',
             voicemailMessage: 'Thank you for calling. Please leave a message after the beep.',
-            endCallMessage: 'Thank you for calling. Goodbye!'
+            endCallMessage: 'Thank you for calling. Goodbye!',
+            firstMessageInterruptionsEnabled: true,
+            transcriber: {
+                model: 'nova-2',
+                language: 'en',
+                provider: 'deepgram'
+            },
+            startSpeakingPlan: {
+                waitSeconds: 0.3,
+                smartEndpointingPlan: {
+                    provider: 'livekit',
+                    waitFunction: '(20 + 500 * sqrt(x) + 2500 * x^3 + 700 + 4000 * max(0, x-0.5)) / 2'
+                }
+            }
         })
 
         await assignVapiAgentToClient(client.id, agent.id)

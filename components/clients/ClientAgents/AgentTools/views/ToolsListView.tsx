@@ -1,25 +1,73 @@
 'use client'
 
-import { useState } from "react"
 import { VapiTool } from "@/app/api/agents/tools/ToolTypes"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Plus, ChevronRight, Trash2 } from "lucide-react"
 import { ToolType } from "../hooks/useToolsNavigation"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu"
 
 interface ToolsListViewProps {
     tools: VapiTool[]
-    onCreateTool: () => void
+    onCreateTool: (toolType: ToolType) => void
     onSelectTool: (tool: VapiTool) => void
     onDeleteTool: (tool: VapiTool) => void
 }
 
+const toolOptions: Array<{ value: ToolType; icon: string; title: string; description: string }> = [
+    {
+        value: 'transferCall',
+        icon: '📞',
+        title: 'Transfer Call',
+        description: 'Connect callers to another line.'
+    },
+    {
+        value: 'apiRequest',
+        icon: '🌐',
+        title: 'API Request',
+        description: 'Call an external service mid-convo.'
+    },
+    {
+        value: 'sms',
+        icon: '💬',
+        title: 'SMS',
+        description: 'Send a follow-up text message.'
+    }
+]
+
 export function ToolsListView({ tools, onCreateTool, onSelectTool, onDeleteTool }: ToolsListViewProps) {
-    const [searchQuery, setSearchQuery] = useState("")
-    const [typeFilter, setTypeFilter] = useState<"all" | ToolType>("all")
+    const renderCreateDropdown = (buttonClassName?: string) => (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button className={`flex items-center gap-2 ${buttonClassName ?? ''}`}>
+                    <Plus className="h-4 w-4" />
+                    New tool
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+                {toolOptions.map((option) => (
+                    <DropdownMenuItem
+                        key={option.value}
+                        onClick={() => onCreateTool(option.value)}
+                        className="flex flex-col items-start gap-1"
+                    >
+                        <span className="flex items-center gap-2 text-sm font-medium">
+                            <span>{option.icon}</span>
+                            {option.title}
+                        </span>
+                        <span className="text-xs text-muted-foreground">{option.description}</span>
+                    </DropdownMenuItem>
+                ))}
+            </DropdownMenuContent>
+        </DropdownMenu>
+    )
 
     const getToolTypeDisplayName = (type: string) => {
         switch (type) {
@@ -47,86 +95,11 @@ export function ToolsListView({ tools, onCreateTool, onSelectTool, onDeleteTool 
         }
     }
 
-    const filteredTools = tools.filter((tool) => {
-        const matchesType = typeFilter === 'all' ? true : tool.type === typeFilter
-        const q = searchQuery.trim().toLowerCase()
-        const matchesQuery = !q
-            || tool.function.name.toLowerCase().includes(q)
-            || tool.function.description.toLowerCase().includes(q)
-        return matchesType && matchesQuery
-    })
-
-    const totalCount = tools.length
-    const showingCount = filteredTools.length
-    const countTransfer = tools.filter(t => t.type === 'transferCall').length
-    const countApi = tools.filter(t => t.type === 'apiRequest').length
-    const countSms = tools.filter(t => t.type === 'sms').length
-
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold">Agent Tools</h1>
-                    <p className="text-muted-foreground">
-                        Manage tools available to your agent during conversations
-                    </p>
-                </div>
-                <Button onClick={onCreateTool} className="flex items-center gap-2">
-                    <Plus className="h-4 w-4" />
-                    Create Tool
-                </Button>
+            <div className="flex justify-end">
+                {renderCreateDropdown()}
             </div>
-
-            <Card>
-                <CardContent className="py-4 space-y-3">
-                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
-                        <Input
-                            id="search"
-                            placeholder="Search tools"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="md:flex-1"
-                        />
-                        <div className="flex flex-wrap gap-2">
-                            <Button
-                                type="button"
-                                variant={typeFilter === 'all' ? 'secondary' : 'outline'}
-                                size="sm"
-                                onClick={() => setTypeFilter('all')}
-                            >
-                                All ({totalCount})
-                            </Button>
-                            <Button
-                                type="button"
-                                variant={typeFilter === 'transferCall' ? 'secondary' : 'outline'}
-                                size="sm"
-                                onClick={() => setTypeFilter('transferCall')}
-                            >
-                                📞 Transfer ({countTransfer})
-                            </Button>
-                            <Button
-                                type="button"
-                                variant={typeFilter === 'apiRequest' ? 'secondary' : 'outline'}
-                                size="sm"
-                                onClick={() => setTypeFilter('apiRequest')}
-                            >
-                                🌐 API ({countApi})
-                            </Button>
-                            <Button
-                                type="button"
-                                variant={typeFilter === 'sms' ? 'secondary' : 'outline'}
-                                size="sm"
-                                onClick={() => setTypeFilter('sms')}
-                            >
-                                💬 SMS ({countSms})
-                            </Button>
-                        </div>
-                        <div className="text-xs text-muted-foreground md:ml-auto whitespace-nowrap">
-                            Showing {showingCount} of {totalCount}
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
 
             {tools.length === 0 ? (
                 <div className="text-center py-16">
@@ -137,19 +110,11 @@ export function ToolsListView({ tools, onCreateTool, onSelectTool, onDeleteTool 
                     <p className="text-muted-foreground mb-6">
                         Tools let your agent take actions during calls
                     </p>
-                    <Button onClick={onCreateTool}>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Create Tool
-                    </Button>
+                    {renderCreateDropdown("ml-auto mr-auto")}
                 </div>
             ) : (
-                filteredTools.length === 0 ? (
-                    <div className="text-center py-12">
-                        <p className="text-muted-foreground">No tools match your search</p>
-                    </div>
-                ) : (
-                    <Card>
-                        <Table>
+                <Card className="shadow-sm">
+                    <Table>
                             <TableHeader>
                                 <TableRow>
                                     <TableHead className="w-12"></TableHead>
@@ -160,7 +125,7 @@ export function ToolsListView({ tools, onCreateTool, onSelectTool, onDeleteTool 
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {filteredTools.map((tool) => (
+                                {tools.map((tool) => (
                                     <TableRow 
                                         key={tool.id} 
                                         className="cursor-pointer hover:bg-muted/50"
@@ -253,7 +218,6 @@ export function ToolsListView({ tools, onCreateTool, onSelectTool, onDeleteTool 
                             </TableBody>
                         </Table>
                     </Card>
-                )
             )}
         </div>
     )

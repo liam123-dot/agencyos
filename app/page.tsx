@@ -19,7 +19,7 @@ export default function Home() {
             </Badge>
             <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
               Welcome to{" "}
-              <span className="text-primary">Whitelabel</span>
+              <span className="text-primary">AgencyOS</span>
             </h1>
             <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
               A modern, customizable platform built with the latest technologies. 

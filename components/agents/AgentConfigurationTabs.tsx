@@ -11,6 +11,21 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Save, Loader2 } from "lucide-react"
 import { updateVapiAgent, UpdateAgentConfigData } from "@/app/api/agents/updateVapiAgent"
 import { toast } from "sonner"
+
+interface SmartEndpointingPlan {
+  provider?: string
+  waitFunction?: string
+}
+
+interface StartSpeakingPlan {
+  waitSeconds?: number
+  smartEndpointingPlan?: SmartEndpointingPlan
+}
+
+interface StopSpeakingPlan {
+  voiceSeconds?: number
+}
+
 interface VapiAgent {
   id: string
   name?: string
@@ -18,6 +33,8 @@ interface VapiAgent {
   firstMessageInterruptionsEnabled?: boolean
   voicemailMessage?: string
   endCallMessage?: string
+  startSpeakingPlan?: StartSpeakingPlan
+  stopSpeakingPlan?: StopSpeakingPlan
   model?: any
 }
 
@@ -45,6 +62,16 @@ export function AgentConfigurationTabs({ agentId, vapiAgent }: AgentConfiguratio
     firstMessageInterruptionsEnabled: vapiAgent.firstMessageInterruptionsEnabled ?? false,
     voicemailMessage: vapiAgent.voicemailMessage || '',
     endCallMessage: vapiAgent.endCallMessage || '',
+    startSpeakingPlan: {
+      waitSeconds: vapiAgent.startSpeakingPlan?.waitSeconds ?? 0.3,
+      smartEndpointingPlan: {
+        provider: vapiAgent.startSpeakingPlan?.smartEndpointingPlan?.provider ?? 'livekit',
+        waitFunction: vapiAgent.startSpeakingPlan?.smartEndpointingPlan?.waitFunction ?? '(20 + 500 * sqrt(x) + 2500 * x^3 + 700 + 4000 * max(0, x-0.5)) / 2',
+      }
+    },
+    stopSpeakingPlan: {
+      voiceSeconds: vapiAgent.stopSpeakingPlan?.voiceSeconds ?? 0.1,
+    }
   })
 
   const handleInputChange = (field: keyof typeof formData, value: string | boolean) => {
@@ -52,6 +79,36 @@ export function AgentConfigurationTabs({ agentId, vapiAgent }: AgentConfiguratio
       ...prev,
       [field]: value
     }))
+  }
+
+  const handleNestedInputChange = (
+    section: 'startSpeakingPlan' | 'stopSpeakingPlan',
+    field: string,
+    value: number,
+    nestedField?: string,
+    stringValue?: string
+  ) => {
+    setFormData(prev => {
+      if (nestedField) {
+        return {
+          ...prev,
+          [section]: {
+            ...prev[section],
+            [field]: {
+              ...(prev[section] as any)[field],
+              [nestedField]: stringValue !== undefined ? stringValue : value
+            }
+          }
+        }
+      }
+      return {
+        ...prev,
+        [section]: {
+          ...prev[section],
+          [field]: value
+        }
+      }
+    })
   }
 
   const handleSave = async () => {
@@ -64,6 +121,8 @@ export function AgentConfigurationTabs({ agentId, vapiAgent }: AgentConfiguratio
         firstMessageInterruptionsEnabled: formData.firstMessageInterruptionsEnabled,
         voicemailMessage: formData.voicemailMessage,
         endCallMessage: formData.endCallMessage,
+        startSpeakingPlan: formData.startSpeakingPlan,
+        stopSpeakingPlan: formData.stopSpeakingPlan,
       }
 
       await updateVapiAgent(agentId, updateData)
@@ -82,15 +141,17 @@ export function AgentConfigurationTabs({ agentId, vapiAgent }: AgentConfiguratio
     formData.firstMessage !== (vapiAgent.firstMessage || '') ||
     formData.firstMessageInterruptionsEnabled !== (vapiAgent.firstMessageInterruptionsEnabled ?? false) ||
     formData.voicemailMessage !== (vapiAgent.voicemailMessage || '') ||
-    formData.endCallMessage !== (vapiAgent.endCallMessage || '')
+    formData.endCallMessage !== (vapiAgent.endCallMessage || '') ||
+    formData.startSpeakingPlan.waitSeconds !== (vapiAgent.startSpeakingPlan?.waitSeconds ?? 0.3) ||
+    formData.startSpeakingPlan.smartEndpointingPlan.provider !== (vapiAgent.startSpeakingPlan?.smartEndpointingPlan?.provider ?? 'livekit') ||
+    formData.startSpeakingPlan.smartEndpointingPlan.waitFunction !== (vapiAgent.startSpeakingPlan?.smartEndpointingPlan?.waitFunction ?? '(20 + 500 * sqrt(x) + 2500 * x^3 + 700 + 4000 * max(0, x-0.5)) / 2') ||
+    formData.stopSpeakingPlan.voiceSeconds !== (vapiAgent.stopSpeakingPlan?.voiceSeconds ?? 0.1)
 
   return (
     <div className="space-y-6">
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="general">General</TabsTrigger>
-          <TabsTrigger value="system">System Prompt</TabsTrigger>
-          <TabsTrigger value="messages">Messages</TabsTrigger>
           <TabsTrigger value="advanced">Advanced</TabsTrigger>
         </TabsList>
         
@@ -102,7 +163,7 @@ export function AgentConfigurationTabs({ agentId, vapiAgent }: AgentConfiguratio
                 Basic configuration for your agent
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="name">Agent Name</Label>
                 <Input
@@ -112,21 +173,9 @@ export function AgentConfigurationTabs({ agentId, vapiAgent }: AgentConfiguratio
                   placeholder="Enter agent name"
                 />
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="system" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>System Prompt</CardTitle>
-              <CardDescription>
-                The main instructions that guide your agent's behavior and responses
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+              
               <div className="space-y-2">
-                <Label htmlFor="systemMessage">System Message</Label>
+                <Label htmlFor="systemMessage">System Prompt</Label>
                 <Textarea
                   id="systemMessage"
                   value={formData.systemMessage}
@@ -135,19 +184,7 @@ export function AgentConfigurationTabs({ agentId, vapiAgent }: AgentConfiguratio
                   className="min-h-[400px] font-mono text-sm"
                 />
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="messages" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Agent Messages</CardTitle>
-              <CardDescription>
-                Configure the messages your agent uses in different scenarios
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
+              
               <div className="space-y-2">
                 <Label htmlFor="firstMessage">First Message</Label>
                 <Textarea
@@ -174,7 +211,19 @@ export function AgentConfigurationTabs({ agentId, vapiAgent }: AgentConfiguratio
                   Allow interruptions during first message
                 </Label>
               </div>
-              
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="advanced" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Advanced Settings</CardTitle>
+              <CardDescription>
+                Advanced configuration options for your agent
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="voicemailMessage">Voicemail Message</Label>
                 <Textarea
@@ -196,22 +245,73 @@ export function AgentConfigurationTabs({ agentId, vapiAgent }: AgentConfiguratio
                   className="min-h-[100px]"
                 />
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="advanced" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Advanced Settings</CardTitle>
-              <CardDescription>
-                Advanced configuration options for your agent
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground text-sm">
-                Advanced settings will be available in a future update.
-              </p>
+              
+              <div className="space-y-4 pt-4 border-t">
+                <h3 className="text-sm font-semibold">Start Speaking Plan</h3>
+                <div className="space-y-2">
+                  <Label htmlFor="waitSeconds">Wait Seconds</Label>
+                  <Input
+                    id="waitSeconds"
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    value={formData.startSpeakingPlan.waitSeconds}
+                    onChange={(e) => handleNestedInputChange('startSpeakingPlan', 'waitSeconds', parseFloat(e.target.value))}
+                    placeholder="0.3"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    How long to wait before the agent starts speaking
+                  </p>
+                </div>
+                
+                <div className="space-y-4 pl-4 border-l-2">
+                  <h4 className="text-sm font-medium">Smart Endpointing Plan (LiveKit)</h4>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="provider">Provider</Label>
+                    <Input
+                      id="provider"
+                      type="text"
+                      value={formData.startSpeakingPlan.smartEndpointingPlan.provider}
+                      onChange={(e) => handleNestedInputChange('startSpeakingPlan', 'smartEndpointingPlan', 0, 'provider', e.target.value)}
+                      placeholder="livekit"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="waitFunction">Wait Function</Label>
+                    <Textarea
+                      id="waitFunction"
+                      value={formData.startSpeakingPlan.smartEndpointingPlan.waitFunction}
+                      onChange={(e) => handleNestedInputChange('startSpeakingPlan', 'smartEndpointingPlan', 0, 'waitFunction', e.target.value)}
+                      placeholder="(20 + 500 * sqrt(x) + 2500 * x^3 + 700 + 4000 * max(0, x-0.5)) / 2"
+                      className="font-mono text-sm"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Mathematical function to determine wait time based on speech pattern
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-4 pt-4 border-t">
+                <h3 className="text-sm font-semibold">Stop Speaking Plan</h3>
+                <div className="space-y-2">
+                  <Label htmlFor="voiceSeconds">Voice Seconds</Label>
+                  <Input
+                    id="voiceSeconds"
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    value={formData.stopSpeakingPlan.voiceSeconds}
+                    onChange={(e) => handleNestedInputChange('stopSpeakingPlan', 'voiceSeconds', parseFloat(e.target.value))}
+                    placeholder="0.1"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    How long to wait after detecting voice before stopping
+                  </p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

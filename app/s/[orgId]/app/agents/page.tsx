@@ -1,4 +1,5 @@
 import ClientAgentsList from "@/components/ClientsDashboard/Agents/ClientAgentsList";
+import WorkflowsList from "@/components/ClientsDashboard/Agents/WorkflowsList";
 
 // extract the client_id from the search params
 export default async function AgentsPage({ 
@@ -13,8 +14,9 @@ export default async function AgentsPage({
     const { orgId } = await params
 
     return (
-        <div className="container mx-auto p-6">
+        <div className="container mx-auto p-6 space-y-6">
             <ClientAgentsList clientId={client_id} orgId={orgId} />
+            <WorkflowsList clientId={client_id} orgId={orgId} />
         </div>
     )
 }

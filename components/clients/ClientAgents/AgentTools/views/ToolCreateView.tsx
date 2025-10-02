@@ -1,19 +1,15 @@
 'use client'
 
-import { useState } from "react"
+import { useMemo } from "react"
 import { CreateVapiToolDto, VapiTool } from "@/app/api/agents/tools/ToolTypes"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, XCircle } from "lucide-react"
 import { ToolCell } from "../ToolTypes/ToolCell"
 import { ToolType } from "../hooks/useToolsNavigation"
 
 interface ToolCreateViewProps {
     selectedToolType: ToolType
-    onToolTypeChange: (toolType: ToolType) => void
     onBack: () => void
     onToolCreated: (tool: VapiTool) => void
     isCreating: boolean
@@ -21,7 +17,6 @@ interface ToolCreateViewProps {
 
 export function ToolCreateView({ 
     selectedToolType, 
-    onToolTypeChange, 
     onBack, 
     onToolCreated,
     isCreating 
@@ -33,108 +28,78 @@ export function ToolCreateView({
         await onToolCreated(createData as VapiTool)
     }
 
-    // Create a mock tool object for the creation form
-    const mockTool = createMockTool(selectedToolType)
+    const mockTool = useMemo(() => createMockTool(selectedToolType), [selectedToolType])
+
+    const toolTypeLabel = useMemo(() => {
+        switch (selectedToolType) {
+            case 'transferCall':
+                return 'Transfer Call'
+            case 'apiRequest':
+                return 'API Request'
+            case 'sms':
+                return 'SMS'
+            default:
+                return 'Tool'
+        }
+    }, [selectedToolType])
+
+    const toolTypeSummary = useMemo(() => {
+        switch (selectedToolType) {
+            case 'transferCall':
+                return 'Help the agent seamlessly hand off a caller to a teammate or number you specify.'
+            case 'apiRequest':
+                return 'Let the agent call an HTTP endpoint during a conversation to sync or fetch data.'
+            case 'sms':
+                return 'Allow the agent to text the caller with links, confirmations, or next steps.'
+            default:
+                return ''
+        }
+    }, [selectedToolType])
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center gap-4">
+        <div className="space-y-8">
+            <header className="space-y-2">
                 <Button
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
                     onClick={onBack}
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-2 px-0 text-muted-foreground hover:text-foreground"
                 >
                     <ArrowLeft className="h-4 w-4" />
-                    Back to Tools
+                    Back to all tools
                 </Button>
-                <div>
-                    <h1 className="text-2xl font-bold">Create New Tool</h1>
-                    <p className="text-muted-foreground">
-                        Choose a tool type and configure it for your agent
-                    </p>
+                <div className="flex flex-wrap items-center gap-3">
+                    <h1 className="text-3xl font-semibold">Create a new tool</h1>
+                    <Badge variant="outline" className="text-xs uppercase tracking-wide">
+                        {toolTypeLabel}
+                    </Badge>
                 </div>
-            </div>
-
-            <Card>
-                <CardContent className="py-4">
-                    <div className="flex items-center gap-3">
-                        <Badge variant="secondary" className="rounded-full">1</Badge>
-                        <span className="text-sm font-medium">Select tool type</span>
-                        <span className="text-muted-foreground">→</span>
-                        <Badge variant="outline" className="rounded-full">2</Badge>
-                        <span className="text-sm">Configure details</span>
+                <p className="max-w-xl text-sm text-muted-foreground">
+                    Fill in the details your agent will rely on. Once saved, it will appear in the tools list right away.
+                </p>
+                {toolTypeSummary && (
+                    <div className="mt-2 rounded-lg bg-muted p-4 text-sm text-muted-foreground">
+                        {toolTypeSummary}
                     </div>
-                </CardContent>
-            </Card>
+                )}
+            </header>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Select Tool Type</CardTitle>
-                    <CardDescription>
-                        Choose the type of tool you want to create
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="tool-type">Tool Type</Label>
-                        <Select value={selectedToolType} onValueChange={(value) => onToolTypeChange(value as ToolType)}>
-                            <SelectTrigger>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="transferCall">
-                                    <div className="flex items-center gap-2">
-                                        <span>📞</span>
-                                        <span>Transfer Call - Transfer calls to another number</span>
-                                    </div>
-                                </SelectItem>
-                                <SelectItem value="apiRequest">
-                                    <div className="flex items-center gap-2">
-                                        <span>🌐</span>
-                                        <span>API Request - Make HTTP requests to external APIs</span>
-                                    </div>
-                                </SelectItem>
-                                <SelectItem value="sms">
-                                    <div className="flex items-center gap-2">
-                                        <span>💬</span>
-                                        <span>SMS - Send text messages during calls</span>
-                                    </div>
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
+            <ToolCell 
+                tool={mockTool} 
+                onSave={handleSave}
+                isCreateMode={true}
+            />
 
-                    <div className="text-sm text-muted-foreground">
-                        {selectedToolType === 'transferCall' && (
-                            <p>Use when your agent should seamlessly connect a caller to a human or another number.</p>
-                        )}
-                        {selectedToolType === 'apiRequest' && (
-                            <p>Use to fetch or send data to your systems during a conversation.</p>
-                        )}
-                        {selectedToolType === 'sms' && (
-                            <p>Use to send a follow-up text with links, summaries, or confirmations.</p>
-                        )}
-                    </div>
-                </CardContent>
-            </Card>
-
-            {/* Render the appropriate tool creation form */}
-            <div className="space-y-4">
-                <ToolCell 
-                    tool={mockTool} 
-                    onSave={handleSave}
-                    isCreateMode={true}
-                />
-                <div className="flex gap-2">
-                    <Button
-                        variant="outline"
-                        onClick={onBack}
-                        disabled={isCreating}
-                    >
-                        Cancel
-                    </Button>
-                </div>
+            <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                <Button
+                    variant="outline"
+                    onClick={onBack}
+                    disabled={isCreating}
+                    className="flex items-center gap-2"
+                >
+                    <XCircle className="h-4 w-4" />
+                    Cancel
+                </Button>
             </div>
         </div>
     )

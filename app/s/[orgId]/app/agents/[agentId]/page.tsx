@@ -1,6 +1,7 @@
 import { getAgent } from "@/app/api/agents/getAgent"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Activity, Clock, Phone } from "lucide-react"
+import { redirect } from "next/navigation"
 
 function formatDuration(seconds: number) {
     if (seconds === 0) return "0s"
@@ -16,6 +17,7 @@ export default async function AgentOverviewPage({
     params: Promise<{ orgId: string; agentId: string }>
 }) {
     const { agentId } = await params
+    redirect(`/app/agents/${agentId}/configuration`)
 
     try {
         const agent = await getAgent(agentId)

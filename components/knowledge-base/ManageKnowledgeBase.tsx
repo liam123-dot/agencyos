@@ -1,12 +1,11 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from "react"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { AddLink } from "./AddLink"
-import { AddText } from "@/components/knowledge-base/AddText"
 import { KnowledgeOverview } from "./KnowledgeOverview"
 import { KnowledgeBaseBreadcrumb } from "./KnowledgeBaseBreadcrumb"
+import { IntegrationsSection } from "./IntegrationsSection"
+import { WebsiteIntegrationCard } from "./WebsiteIntegrationCard"
+import { AddTextDialog } from "./AddTextDialog"
 import { Knowledge, FileKnowledge, KnowledgeStatus } from "@/lib/types/knowledge"
 import { getKnowledge } from "@/app/api/knowledge-base/addKnowledge"
 
@@ -150,39 +149,38 @@ export function ManageKnowledgeBase({ knowledgeBaseId, knowledgeBaseName = "My K
         <div className="space-y-6">
             <KnowledgeBaseBreadcrumb knowledgeBaseName={knowledgeBaseName} />
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Add Content to Knowledge Base</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <Tabs defaultValue="website" className="w-full">
-                        <TabsList className="grid w-full grid-cols-2">
-                            <TabsTrigger value="website">Website</TabsTrigger>
-                            {/* <TabsTrigger value="file">Upload File</TabsTrigger> */}
-                            <TabsTrigger value="text">Text Input</TabsTrigger>
-                        </TabsList>
-                        
-                        <TabsContent value="website" className="mt-6">
-                            <AddLink onSuccess={handleAddWebsiteKnowledge} knowledgeBaseId={knowledgeBaseId} />
-                        </TabsContent>
-                        
-                        {/* <TabsContent value="file" className="mt-6">
-                            <AddPdf onSuccess={handleAddFileKnowledge} knowledgeBaseId={knowledgeBaseId} />
-                        </TabsContent> */}
-                        
-                        <TabsContent value="text" className="mt-6">
-                            <AddText onSuccess={handleAddWebsiteKnowledge} knowledgeBaseId={knowledgeBaseId} />
-                        </TabsContent>
-                    </Tabs>
-                </CardContent>
-            </Card>
+            {/* Header Section */}
+            <div>
+                {/* <h1 className="text-2xl font-semibold tracking-tight">Content Sources</h1> */}
+            </div>
 
-            <KnowledgeOverview 
-                knowledge={knowledgeItems} 
-                onDelete={handleDeleteKnowledge}
-                isLoading={isLoading}
-                isCheckingStatus={isCheckingStatus}
-            />
+            {/* Integrations Section */}
+            <div>
+                <h2 className="text-sm font-medium text-muted-foreground mb-3">INTEGRATIONS</h2>
+                <IntegrationsSection knowledgeBaseId={knowledgeBaseId} />
+            </div>
+
+            {/* Manual Content Sources */}
+            <div>
+                <h2 className="text-sm font-medium text-muted-foreground mb-3">MANUAL SOURCES</h2>
+                <div className="grid gap-4 md:grid-cols-2">
+                    <WebsiteIntegrationCard 
+                        knowledgeBaseId={knowledgeBaseId} 
+                        onSuccess={handleAddWebsiteKnowledge}
+                    />
+                    <AddTextDialog onSuccess={handleAddWebsiteKnowledge} knowledgeBaseId={knowledgeBaseId} />
+                </div>
+            </div>
+
+            {/* Knowledge Overview - Show loading skeleton, or content if available */}
+            {(isLoading || knowledgeItems.length > 0) && (
+                <KnowledgeOverview 
+                    knowledge={knowledgeItems} 
+                    onDelete={handleDeleteKnowledge}
+                    isLoading={isLoading}
+                    isCheckingStatus={isCheckingStatus}
+                />
+            )}
         </div>
     )
 }

@@ -4,6 +4,20 @@ import { VapiClient } from "@vapi-ai/server-sdk"
 import { createServerClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 
+interface SmartEndpointingPlan {
+    provider?: string
+    waitFunction?: string
+}
+
+interface StartSpeakingPlan {
+    waitSeconds?: number
+    smartEndpointingPlan?: SmartEndpointingPlan
+}
+
+interface StopSpeakingPlan {
+    voiceSeconds?: number
+}
+
 export interface UpdateAgentConfigData {
     name?: string
     firstMessage?: string
@@ -11,6 +25,8 @@ export interface UpdateAgentConfigData {
     voicemailMessage?: string
     endCallMessage?: string
     systemMessage?: string
+    startSpeakingPlan?: StartSpeakingPlan
+    stopSpeakingPlan?: StopSpeakingPlan
     model?: {
         knowledgeBaseId?: string
     }
@@ -54,9 +70,16 @@ export async function updateVapiAgent(agentId: string, updateData: UpdateAgentCo
         firstMessageInterruptionsEnabled: updateData.firstMessageInterruptionsEnabled,
         voicemailMessage: updateData.voicemailMessage,
         endCallMessage: updateData.endCallMessage,
+        startSpeakingPlan: updateData.startSpeakingPlan,
+        stopSpeakingPlan: updateData.stopSpeakingPlan,
         model: {
             ...currentAgent.model,
             knowledgeBaseId: updateData.model?.knowledgeBaseId
+        },
+        analysisPlan: {
+            successEvaluationPlan: {
+                enabled: false
+            }
         }
     }
 

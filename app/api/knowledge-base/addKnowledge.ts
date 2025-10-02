@@ -8,6 +8,8 @@ import { Ragie } from "ragie"
 import { after } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { SupabaseClient } from "@supabase/supabase-js"
+import { ConnectorSource } from "ragie/models/components/connectorsource"
+import { redirect } from "next/navigation"
 
 
 export async function addMultipleWebsiteKnowledge(
@@ -128,6 +130,7 @@ export async function addTextKnowledge(
     // Create a Ragie document from the raw text
     const ragieResponse = await ragie.documents.createRaw({
         data: textDTO.content,
+        partition: knowledgeBaseId,
         metadata: {
             knowledge_base_id: knowledgeBaseId
         }
@@ -243,7 +246,7 @@ export async function checkKnowledgeStatus(clientId?: string) {
     const { client, supabaseServerClient } = await clientDashboardAuth(clientId)
     const { data, error } = await supabaseServerClient
         .from('knowledge')
-        .select('id, status, external_id, type')
+        .select('id, status, external_id, type, knowledge_base_id')
         .eq('client_id', client.id)
         .eq('organization_id', client.organization_id)
 
@@ -261,7 +264,10 @@ export async function checkKnowledgeStatus(clientId?: string) {
         try {
             // Handle Ragie-tracked documents
             if ((item.status === 'processing-ragie' && item.external_id) || (item.type === 'website' && item.status === 'processing' && item.external_id)) {
-                const document = await ragie.documents.get({documentId: item.external_id})
+                const document = await ragie.documents.get({
+                    documentId: item.external_id,
+                    partition: item.knowledge_base_id
+                })
                 const ragieStatus = document?.status
 
                 let newStatus: string | null = null
@@ -426,6 +432,7 @@ async function fetchWebsiteKnowledge(supabaseServerClient: SupabaseClient, url: 
     }
     const ragieResponse = await ragie.documents.createDocumentFromUrl({
         url: url,
+        partition: knowledge_base_id,
         metadata: {
             knowledge_base_id: knowledge_base_id
         }
@@ -488,3 +495,53 @@ function normalizeUrl(raw: string): string | null {
     }
 }
 
+
+export async function createOauthRedirect(source: string, knowledgeBaseId: string) {
+
+    const supabaseServerClient = await createServerClient()
+    const { data: knowledgeBase, error: knowledgeBaseError } = await supabaseServerClient.from('knowledge_base').select('*').eq('id', knowledgeBaseId).single()
+
+    if (knowledgeBaseError) {
+        console.error('Error fetching knowledge base', knowledgeBaseError)
+        throw new Error('Failed to fetch knowledge base')
+    }
+
+    const { data: organization, error: organizationError } = await supabaseServerClient.from('organizations').select('*').eq('id', knowledgeBase.organization_id).single()
+    if (organizationError) {
+        console.error('Error fetching organization', organizationError)
+        throw new Error('Failed to fetch organization')
+    }
+
+    console.log('knowledge base', knowledgeBase)
+
+    const redirectUri = `https://${organization.domain}/app/knowledge-base/${knowledgeBaseId}`
+    console.log('redirectUri', redirectUri)
+    
+    const result = await ragie.connections.createOAuthRedirectUrl({
+        sourceType: source as ConnectorSource,
+        partition: knowledgeBaseId,
+        redirectUri: redirectUri,
+        metadata: {
+            knowledge_base_id: knowledgeBaseId,
+            organization_id: knowledgeBase.organization_id
+        }
+    })
+
+    console.log('oauth redirect', result)
+
+    redirect(result.url)
+
+}
+
+export async function getConnections(knowledgeBaseId: string) {
+    const result = await ragie.connections.list({
+        partition: knowledgeBaseId
+    })
+    return result.result.connections
+}
+
+export async function deleteConnection(connectionId: string) {
+    const result = await ragie.connections.delete({connectionId: connectionId, deleteConnectionPayload: {keepFiles: true}})
+    console.log('connection deleted', result)
+    return result
+}

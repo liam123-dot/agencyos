@@ -66,9 +66,9 @@ export function AppSidebar({ user }: AppSidebarProps) {
       <SidebarHeader className="border-b border-sidebar-border">
         <div className="flex items-center gap-2 p-2">
           <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-sm">W</span>
+            <span className="text-primary-foreground font-bold text-sm">A</span>
           </div>
-          {state === 'expanded' && <span className="font-bold text-lg">Whitelabel</span>}
+          {state === 'expanded' && <span className="font-bold text-lg">AgencyOS</span>}
         </div>
         {state === 'expanded' &&
           <div className="px-2 pb-2">

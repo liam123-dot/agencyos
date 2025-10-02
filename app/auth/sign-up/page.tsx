@@ -10,7 +10,7 @@ export default function Page() {
           <div className="text-center mb-8">
             <h1 className="text-2xl font-bold mb-2">Create your account</h1>
             <p className="text-muted-foreground">
-              Join Whitelabel and get started today
+              Join AgencyOS and get started today
             </p>
           </div>
           <SignUpForm />

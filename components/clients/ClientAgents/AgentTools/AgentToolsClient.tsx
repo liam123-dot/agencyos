@@ -105,7 +105,7 @@ export function AgentToolsClient({ agentId, initialTools }: AgentToolsClientProp
             <>
                 <ToolsListView
                     tools={tools}
-                    onCreateTool={() => navigateToCreate()}
+                    onCreateTool={(toolType) => navigateToCreate(toolType)}
                     onSelectTool={navigateToEdit}
                     onDeleteTool={handleDeleteTool}
                 />
@@ -124,7 +124,6 @@ export function AgentToolsClient({ agentId, initialTools }: AgentToolsClientProp
         return (
             <ToolCreateView
                 selectedToolType={selectedToolType}
-                onToolTypeChange={updateToolType}
                 onBack={navigateToList}
                 onToolCreated={handleToolCreated}
                 isCreating={isCreating}
