@@ -11,6 +11,16 @@ import { saveOrchestration } from "@/app/api/agents/orchestration/orchestrationA
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface PhoneNumber {
     id: string;
@@ -327,6 +337,7 @@ export default function Orchestrate({ orchestrationId, agents, phoneNumbers, wor
     const [tempName, setTempName] = useState("");
     const [isSaving, setIsSaving] = useState(false);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    const [showExitDialog, setShowExitDialog] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
     
     // Find the phone number assigned to this workflow (if any)
@@ -340,7 +351,9 @@ export default function Orchestrate({ orchestrationId, agents, phoneNumbers, wor
         name: workflow?.name || "Untitled Orchestration",
         phoneNumberId: assignedPhoneNumber?.id,
         nodesCount: 0,
-        edgesCount: 0
+        edgesCount: 0,
+        edgesData: [] as any[],
+        isInitialized: false
     });
 
     const handlePhoneNumberChange = useCallback((phoneNumberId: string) => {
@@ -356,7 +369,7 @@ export default function Orchestrate({ orchestrationId, agents, phoneNumbers, wor
                     : edge
             )
         );
-        setHasUnsavedChanges(true);
+        // No need to manually set hasUnsavedChanges - the useEffect will detect the edge data change
     }, []);
 
     // Initialize nodes with phone number data
@@ -545,6 +558,16 @@ export default function Orchestrate({ orchestrationId, agents, phoneNumbers, wor
         
         setNodes(loadedNodes);
         setEdges(loadedEdges);
+        
+        // Update initial state after loading workflow data
+        initialStateRef.current = {
+            name: workflow?.name || "Untitled Orchestration",
+            phoneNumberId: assignedPhoneNumber?.id,
+            nodesCount: loadedNodes.length,
+            edgesCount: loadedEdges.length,
+            edgesData: loadedEdges.map(e => ({ id: e.id, description: e.data?.description || '', message: e.data?.message || '' })),
+            isInitialized: true
+        };
     }, [workflow, agents, initialNodesWithData, handleEdgeDescriptionSave]);
 
     // Load existing workflow data on mount
@@ -554,18 +577,21 @@ export default function Orchestrate({ orchestrationId, agents, phoneNumbers, wor
 
     // Track changes to nodes and edges
     useEffect(() => {
-        if (initialStateRef.current.nodesCount === 0) {
-            // Set initial counts after first load
-            initialStateRef.current.nodesCount = nodes.length;
-            initialStateRef.current.edgesCount = edges.length;
+        // Don't track changes until initial state is set
+        if (!initialStateRef.current.isInitialized) {
             return;
         }
+
+        // Check if edges data has changed
+        const currentEdgesData = edges.map(e => ({ id: e.id, description: e.data?.description || '', message: e.data?.message || '' }));
+        const edgesDataChanged = JSON.stringify(currentEdgesData) !== JSON.stringify(initialStateRef.current.edgesData);
 
         const hasChanges = 
             orchestrationName !== initialStateRef.current.name ||
             selectedPhoneNumberId !== initialStateRef.current.phoneNumberId ||
             nodes.length !== initialStateRef.current.nodesCount ||
-            edges.length !== initialStateRef.current.edgesCount;
+            edges.length !== initialStateRef.current.edgesCount ||
+            edgesDataChanged;
 
         setHasUnsavedChanges(hasChanges);
     }, [nodes, edges, orchestrationName, selectedPhoneNumberId]);
@@ -764,7 +790,9 @@ export default function Orchestrate({ orchestrationId, agents, phoneNumbers, wor
                     name: orchestrationName,
                     phoneNumberId: selectedPhoneNumberId,
                     nodesCount: nodes.length,
-                    edgesCount: edges.length
+                    edgesCount: edges.length,
+                    edgesData: edges.map(e => ({ id: e.id, description: e.data?.description || '', message: e.data?.message || '' })),
+                    isInitialized: true
                 };
             } else {
                 toast.error(result.error || 'Failed to save workflow. Please try again.', { id: toastId });
@@ -782,20 +810,22 @@ export default function Orchestrate({ orchestrationId, agents, phoneNumbers, wor
 
     const handleExit = useCallback(() => {
         if (hasUnsavedChanges) {
-            const confirmExit = window.confirm(
-                'You have unsaved changes. Do you want to save before exiting?'
-            );
-            
-            if (confirmExit) {
-                // Save first, then exit
-                handleSave().then(() => {
-                    router.push('/app/agents');
-                });
-            }
+            setShowExitDialog(true);
         } else {
             router.push('/app/agents');
         }
-    }, [hasUnsavedChanges, handleSave, router]);
+    }, [hasUnsavedChanges, router]);
+
+    const handleExitWithSave = useCallback(async () => {
+        setShowExitDialog(false);
+        await handleSave();
+        router.push('/app/agents');
+    }, [handleSave, router]);
+
+    const handleExitWithoutSave = useCallback(() => {
+        setShowExitDialog(false);
+        router.push('/app/agents');
+    }, [router]);
 
     return (
         <div className="w-full h-full flex flex-col bg-gradient-to-br from-gray-50 to-blue-50/30">
@@ -983,6 +1013,26 @@ export default function Orchestrate({ orchestrationId, agents, phoneNumbers, wor
                     }
                 `}</style>
             </div>
+
+            {/* Exit Confirmation Dialog */}
+            <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Save changes before exiting?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            You have unsaved changes to your workflow. Would you like to save them before exiting?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={handleExitWithoutSave}>
+                            Exit without saving
+                        </AlertDialogCancel>
+                        <AlertDialogAction onClick={handleExitWithSave} className="bg-blue-600 hover:bg-blue-700">
+                            Save and exit
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     )
 }
