@@ -803,9 +803,9 @@ export default function Orchestrate({ orchestrationId, agents, phoneNumbers, wor
             <div className="flex items-center justify-between px-6 py-5 bg-white border-b-2 border-gray-200 shadow-sm">
                 <div className="flex items-center gap-3">
                     {/* Icon */}
-                    <div className="p-2.5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-md">
+                    {/* <div className="p-2.5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-md">
                         <Workflow className="w-6 h-6 text-white" />
-                    </div>
+                    </div> */}
                     
                     {/* Editable Name */}
                     {isEditingName ? (
