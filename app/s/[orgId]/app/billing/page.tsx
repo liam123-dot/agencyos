@@ -3,6 +3,11 @@
 import ClientProductsComponent from "@/components/ClientsDashboard/ClientsProducts/ClientProductsComponent"
 import BillingSuccessHandler from "@/components/ClientsDashboard/ClientsProducts/BillingSuccessHandler"
 import UsageAndInvoicePreviewWrapper from "@/components/ClientsDashboard/ClientsProducts/UsageAndInvoicePreviewWrapper"
+import { Metadata } from "next"
+
+export const metadata: Metadata = {
+  title: "Billing",
+}
 
 // client id is in the search params
 export default async function ProductsPage({ 

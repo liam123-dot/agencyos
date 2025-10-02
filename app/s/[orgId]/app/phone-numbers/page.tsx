@@ -2,6 +2,11 @@
 
 import PhoneNumbersWrapper from "@/components/organizations/TwilioSetup/PhoneNumbersWrapper"
 import { redirect } from "next/navigation"
+import { Metadata } from "next"
+
+export const metadata: Metadata = {
+  title: "Phone Numbers",
+}
 
 interface PhoneNumbersPageProps {
     searchParams: Promise<{ client_id?: string }>

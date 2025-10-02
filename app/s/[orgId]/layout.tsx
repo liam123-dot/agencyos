@@ -42,7 +42,10 @@ export async function generateMetadata({
     };
 
     return {
-      title,
+      title: {
+        template: `${title} - %s`,
+        default: title,
+      },
       icons,
       metadataBase: new URL(`https://${domain}`),
     };

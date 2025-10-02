@@ -4,6 +4,11 @@ import { redirect } from 'next/navigation';
 import { GeneralSettings } from '@/components/settings';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { User } from 'lucide-react';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: "Settings",
+}
 
 export default async function SettingsPage() {
     const supabase = await createServerClient();

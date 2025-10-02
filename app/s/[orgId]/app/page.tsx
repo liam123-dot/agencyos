@@ -1,4 +1,9 @@
 import ClientAnalyticsComponent from "@/components/clients/ClientAnalytics/ClientAnalyticsComponent"
+import { Metadata } from "next"
+
+export const metadata: Metadata = {
+  title: "Analytics",
+}
 
 interface AppPageProps {
     params: Promise<{ orgId: string }>

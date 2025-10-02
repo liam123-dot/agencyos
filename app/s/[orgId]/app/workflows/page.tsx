@@ -1,4 +1,9 @@
 import { Sparkles } from "lucide-react"
+import { Metadata } from "next"
+
+export const metadata: Metadata = {
+  title: "Workflows",
+}
 
 export default async function WorkflowsPage({ searchParams }: { searchParams: Promise<{ client_id: string | undefined }> }) {
     const { client_id } = await searchParams

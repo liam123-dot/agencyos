@@ -1,5 +1,10 @@
 
 import { CallsComponent } from "@/components/ClientsDashboard/Calls/CallsComponent";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Calls",
+}
 
 interface CallsPageProps {
     searchParams: Promise<{
