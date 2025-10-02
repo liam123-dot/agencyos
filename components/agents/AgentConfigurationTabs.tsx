@@ -264,7 +264,7 @@ export function AgentConfigurationTabs({ agentId, vapiAgent }: AgentConfiguratio
                   </p>
                 </div>
                 
-                <div className="space-y-4 pl-4 border-l-2">
+                {/* <div className="space-y-4 pl-4 border-l-2">
                   <h4 className="text-sm font-medium">Smart Endpointing Plan (LiveKit)</h4>
                   
                   <div className="space-y-2">
@@ -291,7 +291,7 @@ export function AgentConfigurationTabs({ agentId, vapiAgent }: AgentConfiguratio
                       Mathematical function to determine wait time based on speech pattern
                     </p>
                   </div>
-                </div>
+                </div> */}
               </div>
               
               <div className="space-y-4 pt-4 border-t">
