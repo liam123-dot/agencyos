@@ -358,7 +358,7 @@ export function AddLink({ onSuccess, knowledgeBaseId }: AddLinkProps) {
                                 {urlList.map((urlItem) => (
                                     <div key={urlItem.id} className="flex items-center justify-between p-2 border rounded-md hover:bg-gray-50 gap-2">
                                         <div className="flex items-center space-x-2 flex-1 min-w-0">
-                                            <span className="text-sm overflow-x-auto whitespace-nowrap flex-1 min-w-0 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent" title={urlItem.url}>
+                                            <span className="text-sm truncate block max-w-full" title={urlItem.url}>
                                                 {urlItem.url}
                                             </span>
                                             {urlItem.error && (
@@ -439,11 +439,11 @@ export function AddLink({ onSuccess, knowledgeBaseId }: AddLinkProps) {
                                             )}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <div className="text-sm font-medium truncate" title={item.title || item.url}>
+                                            <div className="text-sm font-medium truncate block max-w-full" title={item.title || item.url}>
                                                 {item.title || item.url || 'Untitled'}
                                             </div>
                                             {item.url && (
-                                                <div className="text-xs text-muted-foreground overflow-x-auto whitespace-nowrap scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent" title={item.url}>
+                                                <div className="text-xs text-muted-foreground truncate block max-w-full" title={item.url}>
                                                     {item.url}
                                                 </div>
                                             )}

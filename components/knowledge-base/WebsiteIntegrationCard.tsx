@@ -72,7 +72,7 @@ export function WebsiteIntegrationCard({ knowledgeBaseId, onSuccess }: WebsiteIn
             </Card>
 
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+                <DialogContent className="!max-w-[70vw] sm:!max-w-[70vw] w-full max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>Add Websites</DialogTitle>
                         <DialogDescription>
