@@ -57,10 +57,10 @@ export function ClientSignInForm({
       if (authError) throw authError;
 
       // Redirect to the client app with the client_id parameter
+      // Keep loading state active during navigation
       router.push(`/app?client_id=${validation.clientId}`);
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred");
-    } finally {
       setIsLoading(false);
     }
   };

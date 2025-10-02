@@ -1,6 +1,29 @@
 import { Suspense } from "react"
 import { AgentSidebarServer } from "@/components/agents/AgentSidebarServer"
 import { AgentSidebarLoading } from "@/components/agents/AgentSidebarLoading"
+import { getAgent } from "@/app/api/agents/getAgent"
+import { Metadata } from "next"
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ agentId: string }>;
+}): Promise<Metadata> {
+  try {
+    const { agentId } = await params;
+    const agent = await getAgent(agentId);
+    const agentName = agent.data?.name || "Agent";
+    
+    return {
+      title: agentName,
+    };
+  } catch (error) {
+    console.error('Failed to generate agent metadata:', error);
+    return {
+      title: 'Agent',
+    };
+  }
+}
 
 export default async function AgentLayout({
     children,
