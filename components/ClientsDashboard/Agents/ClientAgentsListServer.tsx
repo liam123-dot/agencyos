@@ -1,7 +1,6 @@
 "use server"
 
 import { getClientAgents } from "@/app/api/agents/getClientAgents"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import Link from "next/link"
 import { headers } from "next/headers"
 import { Activity, CalendarDays, ChevronRight, Phone, Users } from "lucide-react"
@@ -40,19 +39,18 @@ export async function ClientAgentsListServer({ clientId, orgId }: { clientId?: s
     const queryString = clientId ? `?client_id=${clientId}` : ""
 
     return (
-        <Card className="border-border/60 shadow-sm">
-            <CardHeader className="border-b border-border/60 pb-6">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <h2 className="text-xl font-semibold">Agent Directory</h2>
-                        <p className="text-sm text-muted-foreground mt-1">
-                            {totalAgents} agent{totalAgents === 1 ? '' : 's'}
-                        </p>
-                    </div>
-                    <CreateAgentButton clientId={clientId} />
+        <>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between px-6 py-4 border-b border-border/60">
+                <div>
+                    <h2 className="text-xl font-semibold">Agent Directory</h2>
+                    <p className="text-sm text-muted-foreground mt-1">
+                        {totalAgents} agent{totalAgents === 1 ? '' : 's'}
+                    </p>
                 </div>
-            </CardHeader>
-            <CardContent className="p-0">
+                <CreateAgentButton clientId={clientId} />
+            </div>
+
+            <div>
                 {/* Column Headers */}
                 <div className="grid grid-cols-[1fr_200px_100px_150px] gap-4 px-6 py-3 border-b border-border/60">
                     <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -125,7 +123,7 @@ export async function ClientAgentsListServer({ clientId, orgId }: { clientId?: s
                         </div>
                     </div>
                 )}
-            </CardContent>
-        </Card>
+            </div>
+        </>
     )
 }

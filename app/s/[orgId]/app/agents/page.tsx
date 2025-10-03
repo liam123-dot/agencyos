@@ -1,5 +1,7 @@
+import AgentsTabsWrapper from "@/components/ClientsDashboard/Agents/AgentsTabsWrapper";
 import ClientAgentsList from "@/components/ClientsDashboard/Agents/ClientAgentsList";
 import WorkflowsList from "@/components/ClientsDashboard/Agents/WorkflowsList";
+import CredentialsPlaceholder from "@/components/ClientsDashboard/Agents/CredentialsPlaceholder";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -19,9 +21,12 @@ export default async function AgentsPage({
     const { orgId } = await params
 
     return (
-        <div className="container mx-auto p-6 space-y-6">
-            <ClientAgentsList clientId={client_id} orgId={orgId} />
-            <WorkflowsList clientId={client_id} orgId={orgId} />
+        <div className="container mx-auto p-6">
+            <AgentsTabsWrapper
+                agentsContent={<ClientAgentsList clientId={client_id} orgId={orgId} />}
+                workflowsContent={<WorkflowsList clientId={client_id} orgId={orgId} />}
+                credentialsContent={<CredentialsPlaceholder />}
+            />
         </div>
     )
 }

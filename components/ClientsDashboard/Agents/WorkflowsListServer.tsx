@@ -1,6 +1,5 @@
 "use server"
 
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { CreateWorkflowButton } from "./CreateWorkflowButton"
 import { getWorkflows } from "@/app/api/agents/orchestration/orchestrationActions"
 import { getUser } from "@/app/api/user/getUser"
@@ -36,19 +35,18 @@ export async function WorkflowsListServer({ clientId, orgId }: { clientId?: stri
     const baseUrl = shouldUsePlatformPrefix ? `/s/${orgId}` : ""
 
     return (
-        <Card className="border-border/60 shadow-sm">
-            <CardHeader className="border-b border-border/60 pb-6">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <h2 className="text-xl font-semibold">Agent Workflows</h2>
-                        <p className="text-sm text-muted-foreground mt-1">
-                            {totalWorkflows} workflow{totalWorkflows === 1 ? '' : 's'}
-                        </p>
-                    </div>
-                    <CreateWorkflowButton clientId={clientId} />
+        <>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between px-6 py-4 border-b border-border/60">
+                <div>
+                    <h2 className="text-xl font-semibold">Agent Workflows</h2>
+                    <p className="text-sm text-muted-foreground mt-1">
+                        {totalWorkflows} workflow{totalWorkflows === 1 ? '' : 's'}
+                    </p>
                 </div>
-            </CardHeader>
-            <CardContent className="p-0">
+                <CreateWorkflowButton clientId={clientId} />
+            </div>
+
+            <div>
                 {totalWorkflows === 0 ? (
                     <div className="py-16 px-6">
                         <div className="flex flex-col items-center gap-3 text-center">
@@ -123,8 +121,8 @@ export async function WorkflowsListServer({ clientId, orgId }: { clientId?: stri
                         </div>
                     </>
                 )}
-            </CardContent>
-        </Card>
+            </div>
+        </>
     )
 }
 
