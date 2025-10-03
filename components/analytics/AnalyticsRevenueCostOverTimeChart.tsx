@@ -123,11 +123,16 @@ export function AnalyticsRevenueCostOverTimeChart({
                                                         </span>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-2 pt-1 border-t border-border/50">
+                                                <div className="flex flex-col gap-1 pt-1 border-t border-border/50">
                                                     <div className="flex flex-1 justify-between leading-none items-center gap-4 pl-[18px]">
                                                         <span className="text-muted-foreground font-semibold">Profit</span>
                                                         <span className={`font-mono font-semibold tabular-nums ${profit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                                                             {formatCurrency(profit)}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex justify-end pl-[18px]">
+                                                        <span className="text-[10px] text-muted-foreground">
+                                                            {data.revenue > 0 ? `${((profit / data.revenue) * 100).toFixed(1)}% margin` : '—'}
                                                         </span>
                                                     </div>
                                                 </div>
