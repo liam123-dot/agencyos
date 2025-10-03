@@ -58,6 +58,18 @@ export function AnalyticsRevenueCostOverTimeChart({
                   maximumFractionDigits: 2,
               }).format(value)
 
+    // Calculate the Y-axis domain with padding
+    const yAxisDomain = useMemo(() => {
+        if (!data || data.length === 0) return [0, 10]
+        const maxRevenue = Math.max(...data.map(d => d.revenue))
+        const maxCost = Math.max(...data.map(d => d.cost))
+        const maxValue = Math.max(maxRevenue, maxCost)
+        if (maxValue === 0) return [0, 10]
+        // Add 10% padding to the top
+        const maxWithPadding = maxValue * 1.1
+        return [0, maxWithPadding]
+    }, [data])
+
     return (
         <Card className="h-full">
             <CardHeader className="pb-2">
@@ -85,6 +97,7 @@ export function AnalyticsRevenueCostOverTimeChart({
                                 tickLine={false} 
                                 axisLine={false}
                                 width={40}
+                                domain={yAxisDomain}
                             />
                             <ChartTooltip
                                 content={({ active, payload }) => {
@@ -147,7 +160,7 @@ export function AnalyticsRevenueCostOverTimeChart({
                                 stroke="var(--color-revenue)"
                                 strokeWidth={2}
                                 fill="var(--color-revenue)"
-                                fillOpacity={0.16}
+                                fillOpacity={0.2}
                                 dot={showDots ? { r: 3 } : false}
                                 activeDot={{ r: 4 }}
                             />
@@ -157,7 +170,7 @@ export function AnalyticsRevenueCostOverTimeChart({
                                 stroke="var(--color-cost)"
                                 strokeWidth={2}
                                 fill="var(--color-cost)"
-                                fillOpacity={0.16}
+                                fillOpacity={0.2}
                                 dot={showDots ? { r: 3 } : false}
                                 activeDot={{ r: 4 }}
                             />

@@ -40,6 +40,16 @@ export function AnalyticsMinutesOverTimeChart({ data, isLoading }: AnalyticsMinu
     const hasData = useMemo(() => (data?.length ?? 0) > 0, [data])
     const showDots = useMemo(() => (data?.length ?? 0) <= 14, [data])
 
+    // Calculate the Y-axis domain with padding
+    const yAxisDomain = useMemo(() => {
+        if (!data || data.length === 0) return [0, 10]
+        const maxMinutes = Math.max(...data.map(d => d.totalMinutes))
+        if (maxMinutes === 0) return [0, 10]
+        // Add 10% padding to the top
+        const maxWithPadding = maxMinutes * 1.1
+        return [0, Math.ceil(maxWithPadding)]
+    }, [data])
+
     return (
         <Card className="h-full">
             <CardHeader className="pb-2">
@@ -67,6 +77,7 @@ export function AnalyticsMinutesOverTimeChart({ data, isLoading }: AnalyticsMinu
                                 tickLine={false} 
                                 axisLine={false}
                                 width={40}
+                                domain={yAxisDomain}
                             />
                             <ChartTooltip
                                 cursor={{ strokeDasharray: '4 4' }}
