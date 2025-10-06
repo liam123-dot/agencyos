@@ -33,7 +33,8 @@ export async function createProduct(productProperties: CreateProductProperties) 
         name,
         description,
         minutes_included,
-        billing_period
+        billing_period,
+        trial_days
     } = productProperties
 
     console.log(productProperties)
@@ -108,6 +109,7 @@ export async function createProduct(productProperties: CreateProductProperties) 
         billing_interval: billing_period,
         billing_meter_event_name: 'seconds_used',
         organization_id: organization.id,
+        trial_days: trial_days,
     })
 
     if (error) {

@@ -12,7 +12,7 @@ import { Subscription } from "@/app/api/clients/subscriptionType"
 import ManageBillingButton from "./ManageBillingButton"
 
 // Simple currency formatter - defaults to USD
-function formatCurrency(amount: number, currency: string = 'USD'): string {
+function formatCurrency(amount: number, currency: string = 'GBP'): string {
     return new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: currency.toUpperCase(),
@@ -266,6 +266,21 @@ function ProductCard({ product, subscription }: { product: Product; subscription
                             Additional usage charged per minute
                         </p>
                     </div>
+
+                    {/* Trial period highlight */}
+                    {product.trial_days > 0 && (
+                        <div className="bg-gradient-to-r from-green-500/5 to-green-500/10 border border-green-500/20 rounded-lg p-4">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm font-semibold text-foreground">Free Trial</span>
+                                <Badge variant="default" className="font-bold bg-green-600 hover:bg-green-700">
+                                    {product.trial_days} days
+                                </Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                Try it free for {product.trial_days} days, no payment required
+                            </p>
+                        </div>
+                    )}
                 </div>
                 
                 <SelectProductButton 

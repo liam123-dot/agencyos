@@ -14,6 +14,7 @@ export interface Product {
     stripe_usage_price_id: string | null;
     billing_meter_event_name: string | null;
     base_price_cents: number;
+    trial_days: number;
     created_at: string;
     updated_at: string;
 }
@@ -26,4 +27,5 @@ export interface CreateProductProperties {
     base_price_cents: number;
     currency: string;
     billing_period: 'day' | 'week' | 'month';
+    trial_days: number;
 }

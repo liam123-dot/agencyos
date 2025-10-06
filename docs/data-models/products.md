@@ -20,6 +20,7 @@ CREATE TABLE public.products (
     stripe_usage_price_id TEXT,
     billing_meter_event_name TEXT,
     base_price_cents INTEGER DEFAULT 0,
+    trial_days INTEGER DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
@@ -41,6 +42,7 @@ CREATE TABLE public.products (
 - **currency**: Currency code (USD, EUR, GBP) - defaults to 'usd'
 - **minutes_included**: Number of minutes included in the base price
 - **billing_interval**: Billing period - supports 'day', 'week', or 'month' (defaults to 'month')
+- **trial_days**: Number of days for trial period when subscribing to this product (defaults to 0)
 
 ### Stripe Integration Fields
 - **stripe_product_id**: Stripe product ID for integration
@@ -72,7 +74,8 @@ Products support a hybrid billing model:
   minutes_included: 500,
   price_per_minute_cents: 10, // $0.10 per additional minute
   currency: "USD",
-  billing_interval: "month"
+  billing_interval: "month",
+  trial_days: 14 // 14-day free trial
 }
 ```
 

@@ -44,7 +44,7 @@ export async function selectProduct(productId: string) {
     }
 
     // create checkout session
-    const checkoutSession = await stripe.checkout.sessions.create({
+    const checkoutSessionParams: Stripe.Checkout.SessionCreateParams = {
         customer: client.stripe_customer_id,
         line_items: [{
             price: product.stripe_base_price_id,
@@ -60,7 +60,16 @@ export async function selectProduct(productId: string) {
             product_id: product.id,
             organization_id: organization.id,
         },
-    })
+    }
+
+    // Add trial period if product has trial_days configured
+    if (product.trial_days && product.trial_days > 0) {
+        checkoutSessionParams.subscription_data = {
+            trial_period_days: product.trial_days,
+        }
+    }
+
+    const checkoutSession = await stripe.checkout.sessions.create(checkoutSessionParams)
 
     // redirect to checkout session
     redirect(checkoutSession.url!)

@@ -8,7 +8,7 @@ import { Textarea } from "../ui/textarea"
 import { Label } from "../ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import { Slider } from "../ui/slider"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { createProduct } from "@/app/api/products/productActions"
 import { CreateProductProperties } from "@/app/api/products/productType"
 import { toast } from "sonner"
@@ -42,7 +42,8 @@ export default function CreateNewProduct() {
         price_per_minute_cents: 0,
         base_price_cents: 0,
         currency: 'USD',
-        billing_period: 'month'
+        billing_period: 'month',
+        trial_days: 0
     })
 
     // Display values in dollars for better UX
@@ -54,6 +55,11 @@ export default function CreateNewProduct() {
     // Economic breakdown state
     const [averageCostPerMinute, setAverageCostPerMinute] = useState(0)
     const [minutesUsed, setMinutesUsed] = useState([0])
+
+    // Reset slider to minutes_included when it changes
+    useEffect(() => {
+        setMinutesUsed([formData.minutes_included])
+    }, [formData.minutes_included])
 
     // Economic calculations
     const pricePerIncludedMinute = formData.minutes_included > 0 
@@ -136,7 +142,8 @@ export default function CreateNewProduct() {
                 price_per_minute_cents: 0,
                 base_price_cents: 0,
                 currency: 'USD',
-                billing_period: 'month'
+                billing_period: 'month',
+                trial_days: 0
             })
             setDisplayPrices({
                 base_price_dollars: 0,
@@ -228,6 +235,22 @@ export default function CreateNewProduct() {
                                     placeholder="0"
                                     value={formData.minutes_included}
                                     onChange={(e) => handleInputChange('minutes_included', parseInt(e.target.value) || 0)}
+                                    disabled={isCreating}
+                                    className="h-10"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="trial_days" className="text-sm font-medium">Trial Days</Label>
+                                <Input
+                                    id="trial_days"
+                                    type="number"
+                                    min="0"
+                                    placeholder="0"
+                                    value={formData.trial_days}
+                                    onChange={(e) => handleInputChange('trial_days', parseInt(e.target.value) || 0)}
                                     disabled={isCreating}
                                     className="h-10"
                                 />
@@ -369,13 +392,13 @@ export default function CreateNewProduct() {
                                         <Slider
                                             value={minutesUsed}
                                             onValueChange={setMinutesUsed}
-                                            max={1000}
+                                            max={Math.max(formData.minutes_included * 2, 100)}
                                             step={1}
                                             className="w-full"
                                         />
                                         <div className="flex justify-between text-xs text-muted-foreground">
                                             <span>0</span>
-                                            <span>1,000</span>
+                                            <span>{Math.max(formData.minutes_included * 2, 100).toLocaleString()}</span>
                                         </div>
                                     </div>
 

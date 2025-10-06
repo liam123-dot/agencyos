@@ -59,6 +59,7 @@ export function BaseProductsTable({
                             <TableHead>Base Price</TableHead>
                             <TableHead>Per Minute</TableHead>
                             <TableHead>Minutes Included</TableHead>
+                            <TableHead>Trial Days</TableHead>
                             <TableHead>Currency</TableHead>
                             <TableHead>Created</TableHead>
                             {rowActionType !== 'none' && <TableHead className="w-[120px]">Action</TableHead>}
@@ -84,6 +85,15 @@ export function BaseProductsTable({
                                         <Badge variant="secondary">
                                             {product.minutes_included} min
                                         </Badge>
+                                    </TableCell>
+                                    <TableCell>
+                                        {product.trial_days > 0 ? (
+                                            <Badge variant="default" className="bg-green-600 hover:bg-green-700">
+                                                {product.trial_days} days
+                                            </Badge>
+                                        ) : (
+                                            <span className="text-muted-foreground text-sm">None</span>
+                                        )}
                                     </TableCell>
                                     <TableCell>
                                         <Badge variant="outline">
@@ -113,7 +123,7 @@ export function BaseProductsTable({
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={rowActionType !== 'none' ? 8 : 7} className="text-center py-8">
+                                <TableCell colSpan={rowActionType !== 'none' ? 9 : 8} className="text-center py-8">
                                     <div className="flex flex-col items-center gap-2">
                                         <span className="text-muted-foreground">{emptyStateMessage}</span>
                                         <span className="text-sm text-muted-foreground">{emptyStateSubMessage}</span>
