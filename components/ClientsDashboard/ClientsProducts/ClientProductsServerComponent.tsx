@@ -155,7 +155,7 @@ function CurrentPlanCard({ subscription, sortedProducts, manageBillingButton, in
                             {formatCurrency(subscription.base_amount_cents / 100, subscription.currency)}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                            Next billing: {subscription.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}
+                            Next billing: {subscription.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A'}
                         </p>
                     </div>
                     

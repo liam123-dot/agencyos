@@ -253,7 +253,7 @@ function UsageCard({ subscription, usageData }: { subscription: any, usageData: 
             <CardHeader className="pb-4">
                 <CardTitle className="text-lg">Current Usage</CardTitle>
                 <CardDescription className="text-sm">
-                    Period ending {new Date(subscription.current_period_end).toLocaleDateString()}
+                    Period ending {new Date(subscription.current_period_end).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -321,7 +321,7 @@ function InvoicePreviewCard({ subscription, invoicePreview }: { subscription: an
             <CardHeader className="pb-4">
                 <CardTitle className="text-lg">Next Invoice</CardTitle>
                 <CardDescription className="text-sm">
-                    Estimated for {invoicePreview.periodEnd.toLocaleDateString()}
+                    Estimated for {invoicePreview.periodEnd.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
