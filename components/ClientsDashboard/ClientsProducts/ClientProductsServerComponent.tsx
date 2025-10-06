@@ -50,6 +50,12 @@ export async function ClientProductsServerComponent({ clientId }: { clientId?: s
     const products = await getClientProducts(clientId)
     const subscription = await getClientSubscriptions(clientId)
 
+    // get the product associated with the subscription
+    let interval: string | undefined;
+    if (subscription) {
+        interval = products.find(product => product.stripe_base_price_id === subscription.base_price_id)?.billing_interval
+    }
+
     // Sort products by base price (monthly equivalent), then by per-minute price
     const sortedProducts = products.sort((a, b) => {
         // First sort by base price
@@ -64,7 +70,7 @@ export async function ClientProductsServerComponent({ clientId }: { clientId?: s
         <div className="space-y-8">
             {/* Current Plan Details */}
             {subscription ? (
-                <CurrentPlanCard subscription={subscription} sortedProducts={sortedProducts} manageBillingButton={<ManageBillingButton />} />
+                <CurrentPlanCard subscription={subscription} sortedProducts={sortedProducts} manageBillingButton={<ManageBillingButton />} interval={interval} />
             ) : null}
         
             {/* Products Grid - Only show if no subscription */}
@@ -121,7 +127,7 @@ export async function ClientProductsServerComponent({ clientId }: { clientId?: s
     )
 }
 
-function CurrentPlanCard({ subscription, sortedProducts, manageBillingButton }: { subscription: Subscription; sortedProducts: Product[]; manageBillingButton?: React.ReactNode }) {
+function CurrentPlanCard({ subscription, sortedProducts, manageBillingButton, interval }: { subscription: Subscription; sortedProducts: Product[]; manageBillingButton?: React.ReactNode; interval: string | undefined }) {
     // Find the current product details
     const currentProduct = sortedProducts.find(product => product.stripe_base_price_id === subscription.base_price_id)
 
@@ -160,7 +166,7 @@ function CurrentPlanCard({ subscription, sortedProducts, manageBillingButton }: 
                             {subscription.minutes_included} min
                         </div>
                         <p className="text-xs text-muted-foreground">
-                            Per month
+                            Per {interval}
                         </p>
                     </div>
                     
