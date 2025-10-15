@@ -1,10 +1,14 @@
 import type { NextConfig } from "next";
 
+// Add this at the top to configure console.log depth
+if (process.env.NODE_ENV === 'development') {
+  require('util').inspect.defaultOptions.depth = null;
+}
+
 const next_public_supabase_url = process.env.NEXT_PUBLIC_SUPABASE_URL!
 
 // const next host
 const next_public_supabase_host = next_public_supabase_url.replace('http://', '').replace('https://', '').replace('://', '').replace('www.', '').replace('//', '')
-
 
 const nextConfig: NextConfig = {
   /* config options here */

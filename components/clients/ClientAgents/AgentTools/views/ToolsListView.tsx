@@ -39,6 +39,12 @@ const toolOptions: Array<{ value: ToolType; icon: string; title: string; descrip
         icon: '💬',
         title: 'SMS',
         description: 'Send a follow-up text message.'
+    },
+    {
+        value: 'externalApp',
+        icon: '🔌',
+        title: 'External App',
+        description: 'Connect to external apps like Google, Slack, etc.'
     }
 ]
 
@@ -77,12 +83,14 @@ export function ToolsListView({ tools, onCreateTool, onSelectTool, onDeleteTool 
                 return 'API Request'
             case 'sms':
                 return 'SMS'
+            case 'externalApp':
+                return 'External App'
             default:
                 return type
         }
     }
 
-    const getToolTypeIcon = (type: string) => {
+    const getToolTypeIcon = (type: string, tool?: VapiTool) => {
         switch (type) {
             case 'transferCall':
                 return <span className="text-base">📞</span>
@@ -90,6 +98,19 @@ export function ToolsListView({ tools, onCreateTool, onSelectTool, onDeleteTool 
                 return <span className="text-base">🌐</span>
             case 'sms':
                 return <span className="text-base">💬</span>
+            case 'externalApp': {
+                const externalAppTool = tool as any
+                if (externalAppTool?.appImgSrc) {
+                    return (
+                        <img 
+                            src={externalAppTool.appImgSrc} 
+                            alt={externalAppTool.appName || 'App'} 
+                            className="w-6 h-6 object-contain rounded"
+                        />
+                    )
+                }
+                return <span className="text-base">🔌</span>
+            }
             default:
                 return <span className="text-base">🔧</span>
         }
@@ -133,16 +154,19 @@ export function ToolsListView({ tools, onCreateTool, onSelectTool, onDeleteTool 
                                     >
                                         <TableCell className="py-3">
                                             <div className="w-6 h-6 flex items-center justify-center">
-                                                {getToolTypeIcon(tool.type)}
+                                                {getToolTypeIcon(tool.type, tool)}
                                             </div>
                                         </TableCell>
                                         <TableCell className="py-3">
                                             <div>
                                                 <div className="font-medium text-sm">
-                                                    {tool.function.name || 'Untitled Tool'}
+                                                    {tool.type === 'externalApp' 
+                                                        ? ((tool as any).label || tool.function?.name || 'Untitled Tool')
+                                                        : (tool.function?.name || 'Untitled Tool')
+                                                    }
                                                 </div>
                                                 <div className="text-xs text-muted-foreground truncate max-w-xs">
-                                                    {tool.function.description || 'No description'}
+                                                    {tool.function?.description || 'No description'}
                                                 </div>
                                             </div>
                                         </TableCell>
@@ -194,6 +218,17 @@ export function ToolsListView({ tools, onCreateTool, onSelectTool, onDeleteTool 
                                                             <span>No destinations</span>
                                                         )}
                                                     </div>
+                                                )}
+                                                {tool.type === 'externalApp' && (
+                                                    <div className="flex items-center gap-2">
+                                                        <span>{(tool as any).appName || 'External App'}</span>
+                                                        {(tool as any).actionName && (
+                                                            <span className="text-muted-foreground">• {(tool as any).actionName}</span>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                {tool.type !== 'apiRequest' && tool.type !== 'sms' && tool.type !== 'transferCall' && tool.type !== 'externalApp' && (
+                                                    <span className="text-muted-foreground">Unknown tool type</span>
                                                 )}
                                             </div>
                                         </TableCell>

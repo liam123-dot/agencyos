@@ -30,6 +30,7 @@ export async function getClientProducts(id: string): Promise<Product[]> {
                 stripe_usage_price_id,
                 billing_meter_event_name,
                 base_price_cents,
+                trial_days,
                 created_at,
                 updated_at
             )

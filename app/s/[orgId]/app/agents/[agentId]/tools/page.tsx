@@ -9,6 +9,7 @@ export default async function AgentToolsPage({
     params: Promise<{ orgId: string; agentId: string }>
 }) {
     const { agentId } = await params
+    console.log('agentId', agentId)
 
     return <AgentToolsServer agentId={agentId} />
 }

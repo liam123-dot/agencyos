@@ -25,7 +25,7 @@ export default async function AgentsPage({
             <AgentsTabsWrapper
                 agentsContent={<ClientAgentsList clientId={client_id} orgId={orgId} />}
                 workflowsContent={<WorkflowsList clientId={client_id} orgId={orgId} />}
-                credentialsContent={<CredentialsPlaceholder />}
+                credentialsContent={<CredentialsPlaceholder clientId={client_id} />}
             />
         </div>
     )

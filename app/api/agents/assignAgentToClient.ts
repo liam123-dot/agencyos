@@ -56,7 +56,8 @@ export async function assignVapiAgentToClient(clientId: string, vapiAgentId: str
 
 async function assignWebhookToVapiAgent(vapiKey: string, agentId: string, vapiAgentId: string) {
 
-    const webhookUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/agents/${agentId}/webhook`
+    // const webhookUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/agents/${agentId}/webhook`
+    const webhookUrl = "https://www.example.com/api"
 
     const vapi = new VapiClient({token: vapiKey})
 

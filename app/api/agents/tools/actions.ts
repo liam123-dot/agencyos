@@ -3,6 +3,7 @@
 import { CreateVapiToolDto, UpdateVapiToolDto } from "./ToolTypes";
 import { getUser } from "../../user/getUser";
 import { VapiClient } from "@vapi-ai/server-sdk";
+import { deleteExternalAppTool } from "./createExternalAppTool";
 
 export async function updateTool(toolId: string, toolData: UpdateVapiToolDto) {
     
@@ -65,12 +66,30 @@ export async function createTool(agentId: string, toolData: CreateVapiToolDto) {
     return tool
 }
 
-export async function deleteTool(agentId: string, toolId: string) {
+export async function deleteTool(agentId: string, toolId: string, clientId?: string) {
     const { userData, supabaseServerClient } = await getUser()
-    const client_id = userData.client_id;
+    const effective_client_id = clientId || userData.client_id;
+
+    console.log('deleteTool with id', toolId)
+
+    // Check if this is an external app tool (by checking if it exists in external_app_tools table)
+    const { data: externalAppTool, error: externalAppToolError } = await supabaseServerClient
+        .from('external_app_tools')
+        .select('*')
+        .eq('external_id', toolId)
+        .single()
+
+    // If it's an external app tool, use the dedicated delete function
+    if (externalAppTool && !externalAppToolError) {
+        console.log('Detected external app tool, using deleteExternalAppTool')
+        return await deleteExternalAppTool(toolId, agentId, effective_client_id)
+    }
+
+    // Otherwise, handle as a regular Vapi tool
+    console.log('Handling as regular Vapi tool')
 
     // Get client and organization data
-    const {data: client, error: clientError} = await supabaseServerClient.from('clients').select('*').eq('id', client_id).single()
+    const {data: client, error: clientError} = await supabaseServerClient.from('clients').select('*').eq('id', effective_client_id).single()
     if (clientError) throw new Error('Failed to fetch client data')
 
     const {data: organization, error: organizationError} = await supabaseServerClient.from('organizations').select('*').eq('id', client.organization_id).single()    
@@ -81,8 +100,6 @@ export async function deleteTool(agentId: string, toolId: string) {
     if (agentError) throw new Error('Failed to fetch agent data')
 
     const vapiClient = new VapiClient({token: organization.vapi_api_key})
-
-    console.log('deleteTool with id', toolId)
 
     // Get the current assistant to update its toolIds
     const assistant = await vapiClient.assistants.get(agent.platform_id)

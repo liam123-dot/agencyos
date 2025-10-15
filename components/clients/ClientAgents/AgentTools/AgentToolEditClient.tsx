@@ -1,19 +1,38 @@
 'use client'
 
+import { useRouter, usePathname } from "next/navigation"
 import { VapiTool } from "@/app/api/agents/tools/ToolTypes"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft } from "lucide-react"
-import { ToolCell } from "../ToolTypes/ToolCell"
+import { ToolCell } from "./ToolTypes/ToolCell"
 
-interface ToolEditViewProps {
+interface AgentToolEditClientProps {
     tool: VapiTool
-    onBack: () => void
-    onSave: (toolData: any) => void
-    onSaveSuccess?: () => void
+    agentId: string
+    orgId: string
 }
 
-export function ToolEditView({ tool, onBack, onSave, onSaveSuccess }: ToolEditViewProps) {
+export function AgentToolEditClient({ tool, agentId, orgId }: AgentToolEditClientProps) {
+    const router = useRouter()
+    const pathname = usePathname()
+
+    const handleBack = () => {
+        // Navigate back to tools list
+        const toolsPath = pathname.replace('/edit', '')
+        router.push(toolsPath)
+    }
+
+    const handleSave = async (toolData: any) => {
+        // This will be handled by the ToolCell component
+        // No need to show toast here as individual tool components handle it
+    }
+
+    const handleSaveSuccess = () => {
+        // Navigate back to the tools list after successful save
+        handleBack()
+    }
+
     const getToolTypeDisplayName = (type: string) => {
         switch (type) {
             case 'transferCall':
@@ -36,7 +55,7 @@ export function ToolEditView({ tool, onBack, onSave, onSaveSuccess }: ToolEditVi
                     <Button
                         variant="ghost"
                         size="sm"
-                        onClick={onBack}
+                        onClick={handleBack}
                         className="flex items-center gap-2 px-0 text-muted-foreground hover:text-foreground"
                     >
                         <ArrowLeft className="h-4 w-4" />
@@ -54,7 +73,8 @@ export function ToolEditView({ tool, onBack, onSave, onSaveSuccess }: ToolEditVi
                 </Badge>
             </header>
 
-            <ToolCell tool={tool} onSave={onSave} onSaveSuccess={onSaveSuccess} />
+            <ToolCell tool={tool} onSave={handleSave} onSaveSuccess={handleSaveSuccess} />
         </div>
     )
 }
+

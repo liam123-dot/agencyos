@@ -5,7 +5,7 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation"
 import { VapiTool } from "@/app/api/agents/tools/ToolTypes"
 
 export type ViewMode = 'list' | 'create' | 'edit'
-export type ToolType = 'transferCall' | 'apiRequest' | 'sms'
+export type ToolType = 'transferCall' | 'apiRequest' | 'sms' | 'externalApp'
 
 interface UseToolsNavigationProps {
     tools: VapiTool[]
@@ -63,7 +63,7 @@ export function useToolsNavigation({ tools }: UseToolsNavigationProps) {
         } else if (view === 'create' && viewMode !== 'create') {
             setViewMode('create')
             setSelectedTool(null)
-            if (toolType && ['transferCall', 'apiRequest', 'sms'].includes(toolType)) {
+            if (toolType && ['transferCall', 'apiRequest', 'sms', 'externalApp'].includes(toolType)) {
                 setSelectedToolType(toolType)
             }
         } else if (!view && viewMode !== 'list') {

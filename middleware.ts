@@ -18,6 +18,6 @@ export const config = {
      * - /api/phone-numbers/[numberid]/webhook (Phone number webhooks need public access)
      * Feel free to modify this pattern to include more paths.
      */
-    "/((?!_next/static|_next/image|favicon.ico|api/stripe/.*/webhook|api/agents/.*/webhook|api/phone-numbers/.*/webhook|api/knowledge-base/.*/query|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|api/stripe/.*/webhook|api/agents/.*/webhook|api/phone-numbers/.*/webhook|api/knowledge-base/.*/query|api/tool/.*/call|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

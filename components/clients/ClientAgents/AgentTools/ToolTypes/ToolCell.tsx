@@ -6,6 +6,7 @@ import { VapiTool, UpdateVapiToolDto } from "@/app/api/agents/tools/ToolTypes"
 import { VapiSmsToolCall } from "./VapiSmsToolCall"
 import { VapiTransferCallTool } from "./VapiTransferCallTool"
 import { VapiApiRequestTool } from "./VapiApiRequestTool"
+import { VapiExternalAppTool } from "./VapiExternalAppTool"
 // import { VapiEndCallToolCall } from "./VapiEndCallToolCall"
 import {Vapi} from '@vapi-ai/server-sdk'
 import { useState } from "react"
@@ -26,7 +27,9 @@ export function ToolCell({ tool, isCreateMode = false, onSave, onSaveSuccess }: 
     const handleSave = async (toolData: UpdateVapiToolDto) => {
         console.log('handleSave with data', toolData)
         try {
-            if (!isCreateMode) {
+            // External app tools handle their own updates through updateExternalAppTool
+            // So we skip calling updateTool for them
+            if (!isCreateMode && tool.type !== 'externalApp') {
                 await updateTool(tool.id, toolData)
             }
             // Always call the parent's onSave callback
@@ -47,9 +50,11 @@ export function ToolCell({ tool, isCreateMode = false, onSave, onSaveSuccess }: 
             return <VapiSmsToolCall tool={tool} onSave={handleSave} />
         case 'apiRequest':
             return <VapiApiRequestTool tool={tool} onSave={handleSave} />
+        case 'externalApp':
+            return <VapiExternalAppTool tool={tool} onSave={handleSave} />
         // case 'endCall':
         //     return <VapiEndCallToolCall tool={tool} onSave={onSave} />
-        // default:
-        //     return <div>Unknown tool type: {(tool as any).type}</div>
+        default:
+            return <div>Unknown tool type: {(tool as any).type}</div>
     }
 }

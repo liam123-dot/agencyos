@@ -111,6 +111,35 @@ export interface TransferCallTool {
   }>;
 }
 
+/** External App Tool - Full interface with system metadata and database data */
+export interface ExternalAppTool {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  type: "externalApp";
+  function: ToolFunction;
+  messages?: ToolMessage[];
+  orgId: string;
+  // Database fields
+  dbId?: string;
+  name: string;
+  label?: string;
+  description?: string;
+  functionSchema: any;
+  staticConfig?: any;
+  propsConfig?: any;
+  app?: string;
+  appName?: string;
+  appImgSrc?: string;
+  accountId?: string;
+  actionKey?: string;
+  actionName?: string;
+  externalId: string;
+  agentId?: string;
+  clientId?: string;
+  organizationId?: string;
+}
+
 // ============================================
 // CREATE INTERFACES (For Creating Tools)
 // ============================================
@@ -267,7 +296,7 @@ export interface UpdateTransferCallToolDto {
 // ============================================
 
 /** Union type for all full tool objects (with system metadata) */
-export type VapiTool = SmsTool | ApiRequestTool | TransferCallTool;
+export type VapiTool = SmsTool | ApiRequestTool | TransferCallTool | ExternalAppTool;
 
 /** Union type for all tool DTOs (for creating tools) */
 export type CreateVapiToolDto = CreateSmsToolDto | CreateApiRequestToolDto | CreateTransferCallToolDto;
